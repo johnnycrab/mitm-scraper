@@ -59,7 +59,9 @@ HTMLScraper = (function() {
     context.drawImage(img, 0, 0);
     try {
       retVal = canvas.toDataURL('image/png');
-    } catch (_error) {}
+    } catch (_error) {
+      console.log('CORS error');
+    }
     return retVal;
   };
 

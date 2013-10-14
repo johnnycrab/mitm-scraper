@@ -43,6 +43,8 @@ class HTMLScraper
 		context.drawImage img, 0, 0
 		try
 			retVal = canvas.toDataURL 'image/png'
+		catch
+			console.log 'CORS error'
 	
 		retVal
 
