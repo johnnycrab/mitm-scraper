@@ -2,22 +2,27 @@
 # ImageScraper implementation by Johnny
 #
 
+import os
+
 class ImageScraper:
 
-	_saveFolderPath = '/root/Desktop/scraper/'
+	_saveFolderPath = os.path.dirname(__file__) + '/../imagescraper/imagescraper/'
 
 	def __init__(self, host, client, data):
 		self.host = host
 		self.data = data
 		self.client = client
-		self.createExtension()
+		#self.createExtension()
 		self.createTitle()
 
-		self.savePath = ImageScraper._saveFolderPath + self.getTitle() + "." + self.getExtension()
+		self.savePath = ImageScraper._saveFolderPath + self.getTitle()
 
 	def save(self):
-		with open(self.savePath, "w") as image_file:
-			image_file.write(self.data)
+		try:
+			with open(self.savePath, "w") as image_file:
+				image_file.write(self.data)
+		except:
+			pass
 
 	def createExtension(self):
 		contentType = self.client.responseHeaders.getRawHeaders("Content-Type")[-1]
