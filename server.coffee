@@ -1,12 +1,17 @@
 subterfuge_image_loc = 'http://192.168.178.151:3000/static/imagescraper/'
 
 express = require 'express'
-fs = require 'fs'
+#fs = require 'fs'
+redis = require 'redis'
 cheerio = require 'cheerio'
 
 app = express()
 server = require('http').createServer app
 io = require('socket.io').listen server
+
+redisClient = redis.createClient(6379, "127.0.0.1")
+redisClient.on 'error', (err) ->
+	console.log "REDIS ERROR: " + err
 
 server.listen 3000
 
@@ -82,4 +87,5 @@ class PageTransformer
 
 	save: ->
 		#console.log @$.html()
-		fs.writeFile 'pages/' + @timestamp + '.html', @$.html()
+		redisClient.set 'new:printable:' + @timestamp, @$.html(), redis.print
+		#fs.writeFile 'pages/' + @timestamp + '.html', @$.html()
