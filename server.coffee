@@ -38,8 +38,10 @@ class PageTransformer
 		@timestamp = new Date().getTime()
 
 	run: ->
+		@getConnectionInfos()
 		@removeScripts()
 		@changeImageSources()
+		@addConnectionInfoHtml()
 		@save()
 
 	removeScripts: ->
@@ -60,11 +62,22 @@ class PageTransformer
 			# replace all slashes with underscores
 			re = new RegExp '/', 'g'
 			newHost = subterfuge_image_loc + newHost.replace(re, '_')
-			console.log newHost
+
 			$(@).attr 'src', newHost
 			
+	getConnectionInfos: ->
+		$ = @$
+		jsonTag = $('#mitm-scraper-conn-info')
+		if jsonTag.length
+			@connInfo = JSON.parse jsonTag.html()
 
-
+	addConnectionInfoHtml: ->
+		if @connInfo
+			html = '<ul>'
+			for k, v of @connInfo
+				html += '<li>' + k + ': ' + v + '</li>'
+			html += '</ul>'
+			@$('body').prepend html
 			
 
 	save: ->

@@ -42,8 +42,10 @@ PageTransformer = (function() {
   }
 
   PageTransformer.prototype.run = function() {
+    this.getConnectionInfos();
     this.removeScripts();
     this.changeImageSources();
+    this.addConnectionInfoHtml();
     return this.save();
   };
 
@@ -66,9 +68,31 @@ PageTransformer = (function() {
       }
       re = new RegExp('/', 'g');
       newHost = subterfuge_image_loc + newHost.replace(re, '_');
-      console.log(newHost);
       return $(this).attr('src', newHost);
     });
+  };
+
+  PageTransformer.prototype.getConnectionInfos = function() {
+    var $, jsonTag;
+    $ = this.$;
+    jsonTag = $('#mitm-scraper-conn-info');
+    if (jsonTag.length) {
+      return this.connInfo = JSON.parse(jsonTag.html());
+    }
+  };
+
+  PageTransformer.prototype.addConnectionInfoHtml = function() {
+    var html, k, v, _ref;
+    if (this.connInfo) {
+      html = '<ul>';
+      _ref = this.connInfo;
+      for (k in _ref) {
+        v = _ref[k];
+        html += '<li>' + k + ': ' + v + '</li>';
+      }
+      html += '</ul>';
+      return this.$('body').prepend(html);
+    }
   };
 
   PageTransformer.prototype.save = function() {
