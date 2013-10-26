@@ -5,8 +5,9 @@ class HTMLScraper
 		# get the raw HTML
 		@html = document.documentElement.innerHTML
 	run: (cb) ->
-		@convertImages =>
-			cb @html
+		cb @html
+		#@convertImages =>
+			#cb @html
 
 	convertImages: (cb) ->
 		waitForCount = 0
@@ -63,7 +64,7 @@ do ->
 		setTimeout ->
 			scraper = new HTMLScraper()
 			scraper.run (result) ->
-				socket.emit 'scrape', JSON.stringify({ page: result })
+				socket.emit 'scrape', JSON.stringify({ page: result, host: window.location.host })
 		, 3000
 	
 	@

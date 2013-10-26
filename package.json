@@ -4,7 +4,8 @@
   "private": "true",
   "dependencies": {
     "socket.io": "*",
-    "express": "*"
+    "express": "*",
+    "cheerio": "*"
   },
   "main": "server",
   "engines": {

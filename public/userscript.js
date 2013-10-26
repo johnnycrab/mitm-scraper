@@ -7,10 +7,7 @@ HTMLScraper = (function() {
   }
 
   HTMLScraper.prototype.run = function(cb) {
-    var _this = this;
-    return this.convertImages(function() {
-      return cb(_this.html);
-    });
+    return cb(this.html);
   };
 
   HTMLScraper.prototype.convertImages = function(cb) {
@@ -80,7 +77,8 @@ HTMLScraper = (function() {
       scraper = new HTMLScraper();
       return scraper.run(function(result) {
         return socket.emit('scrape', JSON.stringify({
-          page: result
+          page: result,
+          host: window.location.host
         }));
       });
     }, 3000);
