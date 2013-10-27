@@ -102,7 +102,7 @@ PageTransformer = (function() {
   };
 
   PageTransformer.prototype.save = function() {
-    return redisClient.set('new:printable:' + this.timestamp, this.$.html(), redis.print);
+    return redisClient.publish('new:printable:' + this.timestamp, this.$.html(), redis.print);
   };
 
   return PageTransformer;

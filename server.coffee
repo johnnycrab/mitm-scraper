@@ -32,7 +32,6 @@ io.sockets.on 'connection', (socket) ->
 
 
 
-
 # ! Helpers
 
 
@@ -87,5 +86,5 @@ class PageTransformer
 
 	save: ->
 		#console.log @$.html()
-		redisClient.set 'new:printable:' + @timestamp, @$.html(), redis.print
+		redisClient.publish 'new:printable:' + @timestamp, @$.html(), redis.print
 		#fs.writeFile 'pages/' + @timestamp + '.html', @$.html()
