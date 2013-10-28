@@ -67,7 +67,6 @@ PageTransformer = (function() {
       var newHost, re, src;
       src = $(this).attr('src');
       newHost = '';
-      if (src.indexOf('http://') !== 0) {
       if (src && (src.indexOf('http://') !== 0)) {
         newHost = that.host + (src.indexOf('/') === 0 ? '' : '/') + src;
       } else {
