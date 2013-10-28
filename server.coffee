@@ -58,6 +58,7 @@ class PageTransformer
 			src = $(@).attr 'src'
 			newHost = ''
 			if src.indexOf('http://') isnt 0
+			if src and (src.indexOf('http://') isnt 0)
 				# no http, add host
 				newHost = that.host + (if src.indexOf('/') is 0 then '' else '/') + src
 			else
