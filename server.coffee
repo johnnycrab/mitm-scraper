@@ -81,11 +81,12 @@ class PageTransformer
 		$('img').each ->
 			src = $(@).attr 'src'
 			newHost = ''
-			if src and (src.indexOf('http://') isnt 0)
-				# no http, add host
-				newHost = that.host + (if src.indexOf('/') is 0 then '' else '/') + src
-			else
-				newHost = src.replace 'http://', ''
+			if src
+				if src.indexOf('http://') isnt 0
+					# no http, add host
+					newHost = that.host + (if src.indexOf('/') is 0 then '' else '/') + src
+				else
+					newHost = src.replace 'http://', ''
 
 			# replace all slashes with underscores
 			re = new RegExp '/', 'g'
