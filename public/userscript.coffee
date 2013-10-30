@@ -2,6 +2,7 @@
 
 class HTMLScraper
 	constructor: ->
+
 		# get the raw HTML
 		@html = document.documentElement.innerHTML
 	run: (cb) ->
@@ -62,6 +63,16 @@ do ->
 	socket.emit 'ping'
 	socket.on 'ready', ->
 		setTimeout ->
+			###
+			cssText = ''
+			for stylesheet in document.styleSheets
+				if stylesheet.href
+					for cssRule in stylesheet.cssRules
+						cssText += cssRule.cssText
+
+			console.log cssText
+			###
+
 			scraper = new HTMLScraper()
 			scraper.run (result) ->
 				socket.emit 'scrape', JSON.stringify({ page: result, host: window.location.host })

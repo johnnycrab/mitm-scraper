@@ -6,7 +6,8 @@
     "socket.io": "*",
     "express": "*",
     "cheerio": "*",
-    "redis": "*"
+    "redis": "*",
+    "handlebars": "*"
   },
   "main": "server",
   "engines": {

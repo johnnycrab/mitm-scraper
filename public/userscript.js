@@ -73,6 +73,16 @@ HTMLScraper = (function() {
   socket.emit('ping');
   socket.on('ready', function() {
     return setTimeout(function() {
+      /*
+      			cssText = ''
+      			for stylesheet in document.styleSheets
+      				if stylesheet.href
+      					for cssRule in stylesheet.cssRules
+      						cssText += cssRule.cssText
+      
+      			console.log cssText
+      */
+
       var scraper;
       scraper = new HTMLScraper();
       return scraper.run(function(result) {
