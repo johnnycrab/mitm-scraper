@@ -53,7 +53,7 @@ class HTMLScraper
 
 do ->
 	
-	serverLoc = 'http://192.168.178.135:3000'
+	serverLoc = 'http://192.168.178.255:3000'
 
 	# build up a socket connection
 	socket = io.connect serverLoc

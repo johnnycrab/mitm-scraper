@@ -68,7 +68,7 @@ HTMLScraper = (function() {
 
 (function() {
   var serverLoc, socket;
-  serverLoc = 'http://192.168.178.135:3000';
+  serverLoc = 'http://192.168.178.255:3000';
   socket = io.connect(serverLoc);
   socket.emit('ping');
   socket.on('ready', function() {

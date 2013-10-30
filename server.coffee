@@ -1,4 +1,4 @@
-subterfuge_image_loc = 'http://192.168.178.111:5000/static/imagescraper/'
+subterfuge_image_loc = 'http://127.0.0.1:5000/static/imagescraper/'
 
 express = require 'express'
 #fs = require 'fs'
