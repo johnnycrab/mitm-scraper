@@ -41,6 +41,7 @@ from main.models import *
 from twisted.web.http import HTTPClient
 from URLMonitor import URLMonitor
 from ImageScraper import ImageScraper
+from CSSScraper import CSSScraper
 
 class ServerConnection(HTTPClient):
 
@@ -61,6 +62,7 @@ class ServerConnection(HTTPClient):
         self.client           = client
         self.urlMonitor       = URLMonitor.getInstance()
         self.isImageRequest   = False
+        self.isCSSRequest     = False
         self.isCompressed     = False
         self.contentLength    = None
         self.shutdownComplete = False
@@ -181,6 +183,9 @@ class ServerConnection(HTTPClient):
                 self.isImageRequest = True
                 logging.debug("Response is image content, not scanning...")
 
+            if (value.find('css') != -1):
+                self.isCSSRequest = True
+
         if (key.lower() == 'content-encoding'):
             if (value.find('gzip') != -1):
                 logging.debug("Response is compressed...")
@@ -226,9 +231,13 @@ class ServerConnection(HTTPClient):
             data = gzip.GzipFile('', 'rb', 9, StringIO.StringIO(data)).read()
 
         if self.isImageRequest:
-            print "IMAGE"
+            #print "IMAGE"
             imageScraper = ImageScraper(self.headers['host'], self.client, data)
             imageScraper.save()
+
+        elif self.isCSSRequest:
+            cssScraper = CSSScraper(self.headers['host'], self.client, data)
+            cssScraper.save()
 
         else:
             #print data           

@@ -1,5 +1,5 @@
-subterfuge_image_loc = 'http://192.168.0.113:5000/static/images/'
-subterfuge_css_loc = 'http://192.168.0.113:5000/static/css/'
+subterfuge_image_loc = 'http://192.168.0.113:4000/static/images/'
+subterfuge_css_loc = 'http://192.168.0.113:4000/static/css/'
 
 express = require 'express'
 #fs = require 'fs'
@@ -79,30 +79,37 @@ class PageTransformer
 		@getConnectionInfos()
 		@removeScripts()
 		@changeImageSources()
+		@changeCSSSources()
 		#@addConnectionInfoHtml()
 		@save()
 
 	removeScripts: ->
 		@$('script').remove()
 
-	changeImageSources: ->
+	substituteSlashes: (selector, attrName, new_path) ->
 		$ = @$
 		that = @
-		$('img').each ->
-			src = $(@).attr 'src'
+		$(selector).each ->
+			attr = $(@).attr attrName
 			newHost = ''
-			if src
-				if src.indexOf('http://') isnt 0
+			if attr
+				if attr.indexOf('http://') isnt 0
 					# no http, add host
-					newHost = that.host + (if src.indexOf('/') is 0 then '' else '/') + src
+					newHost = that.host + (if attr.indexOf('/') is 0 then '' else '/') + attr
 				else
-					newHost = src.replace 'http://', ''
+					newHost = attr.replace 'http://', ''
+				# replace all slashes with underscores
+				re = new RegExp '/', 'g'
+				newHost = new_path + newHost.replace(re, '_')
 
-			# replace all slashes with underscores
-			re = new RegExp '/', 'g'
-			newHost = subterfuge_image_loc + newHost.replace(re, '_')
+				$(@).attr attrName, newHost
 
-			$(@).attr 'src', newHost
+
+	changeImageSources: ->
+		@substituteSlashes 'img', 'src', subterfuge_image_loc
+
+	changeCSSSources: ->
+		@substituteSlashes 'link[rel=stylesheet]', 'href', subterfuge_css_loc
 			
 	getConnectionInfos: ->
 		$ = @$
