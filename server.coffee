@@ -1,4 +1,5 @@
-subterfuge_image_loc = 'http://192.168.178.151:5000/static/imagescraper/'
+subterfuge_image_loc = 'http://192.168.0.113:5000/static/images/'
+subterfuge_css_loc = 'http://192.168.0.113:5000/static/css/'
 
 express = require 'express'
 #fs = require 'fs'
@@ -14,6 +15,7 @@ io = require('socket.io').listen server
 # ! Redis config
 
 redisClient = redis.createClient(6379, "127.0.0.1")
+redisClient2 = redis.createClient(6379, "127.0.0.1")
 redisClient.on 'error', (err) ->
 	console.log "REDIS ERROR: " + err
 
@@ -54,6 +56,14 @@ io.sockets.on 'connection', (socket) ->
 		pageTransformer.run()
 
 
+# Redis credential subscription
+redisClient.subscribe 'new:credentials'
+redisClient.on 'message', (channel, message) ->
+	if channel is 'new:credentials'
+		credentialsObj = JSON.parse message
+		console.log 'Got credentials %o', credentialsObj
+		if credentialsObj
+			redisClient2.publish 'new:printable:credentials_' + credentialsObj.date, Templates.credentials(credentialsObj)
 
 
 
@@ -114,7 +124,7 @@ class PageTransformer
 	save: ->
 		#console.log @$.html()
 		publishName = 'new:printable:' + @timestamp
-		redisClient.publish publishName, @$.html(), redis.print
+		redisClient2.publish publishName, @$.html(), redis.print
 		if @coverHtml
-			redisClient.publish publishName + '_cover', @coverHtml, redis.print
+			redisClient2.publish publishName + '_cover', @coverHtml, redis.print
 		#fs.writeFile 'pages/' + @timestamp + '.html', @$.html()
