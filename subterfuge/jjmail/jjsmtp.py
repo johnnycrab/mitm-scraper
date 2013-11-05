@@ -40,10 +40,8 @@ class JJMessage(object):
 		print 'REALLY SENDING THE MAIL'
 
 		# this is just a test because of ipfw forwarding all traffic to my own machine -> infinite loop yo!
-		self.protocol.destPort = 587
-		self.protocol.destHost = 'smtp.1und1.de'
-		self.protocol.username = 'jonathan@pirnay.com'
-		self.protocol.password = '<INSERT MAIL HERE>' 
+		self.protocol.username = 'wp10619035-johnny'
+		self.protocol.password = 'aRvIpXalEYxLYwTY' 
 
 		msg = StringIO(str(messageData))
 		dfd = sendmail(self.protocol.username, self.protocol.password, self.protocol.origin, self.recipient, msg, self.protocol.destHost, self.protocol.destPort)
@@ -147,8 +145,8 @@ class JJSMTPFactory(smtp.SMTPFactory):
 		# @todo: Here we should get the real host and port from iptables in Subterfuge somehow
 		#
 		
-		destHost = "wp185.webpack.hosteurope.de"
-		destPort = 25
+		destHost = "wp268.webpack.hosteurope.de"
+		destPort = 587
 
 		proto = smtp.SMTPFactory.buildProtocol(self, addr)
 		proto.destHost = destHost
@@ -158,16 +156,23 @@ class JJSMTPFactory(smtp.SMTPFactory):
 		proto.challengers = {"LOGIN": LOGINCredentials}
 
 		# SSL
-		proto.ctx = ServerTLSContext(privateKeyFileName='certs/server.key', certificateFileName='certs/server.crt')
+		proto.ctx = ServerTLSContext(privateKeyFileName='/usr/share/subterfuge/jjmail/certs/server.key', certificateFileName='/usr/share/subterfuge/jjmail/certs/server.crt')
 
 		return proto
 
 
-def configureMailTraffic():
+def configureSMTPTraffic():
 	print 'Configuring mail traffic'
 	log.startLogging(sys.stdout)
 	
-	reactor.listenTCP(9998, JJSMTPFactory(), interface="127.0.0.1")
+	# port 25
+	reactor.listenTCP(9998, JJSMTPFactory())
+	# port 465
+	reactor.listenTCP(9997, JJSMTPFactory())
+	# port 587
+	reactor.listenTCP(9996, JJSMTPFactory())
+
+	# kickoff
 	reactor.run()
 
 def lp(x):
@@ -198,5 +203,3 @@ def sendmail(
     reactor.connectTCP(smtpHost, smtpPort, senderFactory)
 
     return resultDeferred
-
-configureMailTraffic()
