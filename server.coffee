@@ -6,6 +6,7 @@ express = require 'express'
 redis = require 'redis'
 cheerio = require 'cheerio'
 Handlebars = require 'handlebars'
+Blacklist = require './blacklist'
 fs = require 'fs'
 
 app = express()
@@ -76,12 +77,13 @@ class PageTransformer
 		@timestamp = new Date().getTime()
 
 	run: ->
-		@getConnectionInfos()
-		@removeScripts()
-		@changeImageSources()
-		@changeCSSSources()
-		#@addConnectionInfoHtml()
-		@save()
+		unless Blacklist.do @
+			@getConnectionInfos()
+			@removeScripts()
+			@changeImageSources()
+			@changeCSSSources()
+			#@addConnectionInfoHtml()
+			@save()
 
 	removeScripts: ->
 		@$('script').remove()
@@ -135,3 +137,5 @@ class PageTransformer
 		if @coverHtml
 			redisClient2.publish publishName + '_cover', @coverHtml, redis.print
 		#fs.writeFile 'pages/' + @timestamp + '.html', @$.html()
+
+
