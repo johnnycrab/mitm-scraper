@@ -27,9 +27,8 @@ server.listen 3000
 app.configure ->
   app.use express.static(__dirname + '/public')
 
-
-Templates = {}
 # Handlebars and template setup
+Templates = {}
 hbTemplates = 
 	'cover': 'cover.html'
 	'credentials': 'credentials.html'
@@ -43,6 +42,14 @@ precompileTemplates = ->
 
 precompileTemplates()
 
+# Sequence number for templates
+sequenceNumber = fs.readFileSync(__dirname + '/seqnum', {encoding: 'utf-8'})
+sequenceNumber = if sequenceNumber then parseInt(sequenceNumber) else 0
+
+incSequenceNumber = ->
+	sequenceNumber++
+	fs.writeFile __dirname + '/seqnum', sequenceNumber
+	sequenceNumber
 
 # ! Socket shit
 
@@ -64,6 +71,7 @@ redisClient.on 'message', (channel, message) ->
 		credentialsObj = JSON.parse message
 		console.log 'Got credentials %o', credentialsObj
 		if credentialsObj
+			credentialsObj.sequenceNumber = incSequenceNumber()
 			redisClient2.publish 'new:printable:credentials_' + credentialsObj.date, Templates.credentials(credentialsObj)
 
 
@@ -119,6 +127,7 @@ class PageTransformer
 		if jsonTag.length
 			connInfo = JSON.parse jsonTag.html()
 			if connInfo
+				connInfo.sequenceNumber = incSequenceNumber()
 				@coverHtml = Templates.cover connInfo
 
 	addConnectionInfoHtml: ->
@@ -133,9 +142,10 @@ class PageTransformer
 	save: ->
 		#console.log @$.html()
 		publishName = 'new:printable:' + @timestamp
-		redisClient2.publish publishName, @$.html(), redis.print
 		if @coverHtml
-			redisClient2.publish publishName + '_cover', @coverHtml, redis.print
+			redisClient2.publish publishName + '_cover', @coverHtml, redis.print	
+		redisClient2.publish publishName, @$.html(), redis.print
+		
 		#fs.writeFile 'pages/' + @timestamp + '.html', @$.html()
 
 
