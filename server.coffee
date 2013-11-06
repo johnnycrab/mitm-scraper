@@ -8,6 +8,7 @@ cheerio = require 'cheerio'
 Handlebars = require 'handlebars'
 Blacklist = require './blacklist'
 fs = require 'fs'
+http = require 'http'
 
 app = express()
 server = require('http').createServer app
@@ -60,7 +61,7 @@ io.sockets.on 'connection', (socket) ->
 
 	socket.on 'scrape', (data) ->
 		data = JSON.parse data
-		pageTransformer = new PageTransformer data.page, data.host
+		pageTransformer = new PageTransformer data.page, data.host, data.fullUrl, data.encoding
 		pageTransformer.run()
 
 
@@ -79,7 +80,7 @@ redisClient.on 'message', (channel, message) ->
 # ! Helpers
 
 class PageTransformer
-	constructor: (data, @host) ->
+	constructor: (data, @host, @fullUrl, @encoding) ->
 		@html = '<!DOCTYPE html><html>' + data + '</html>'
 		@$ = cheerio.load @html
 		@timestamp = new Date().getTime()
@@ -90,7 +91,6 @@ class PageTransformer
 			@removeScripts()
 			@changeImageSources()
 			@changeCSSSources()
-			#@addConnectionInfoHtml()
 			@save()
 
 	removeScripts: ->
@@ -120,6 +120,29 @@ class PageTransformer
 
 	changeCSSSources: ->
 		@substituteSlashes 'link[rel=stylesheet]', 'href', subterfuge_css_loc
+
+	getFaviconSrc: (cb) ->
+		possibleExtensions = ['ico', 'png', 'gif', 'jpg', 'jpeg']
+		i = -1
+		opts = 
+			hostname: @host
+			port: 80
+			path: '/favicon.'
+			method: 'HEAD'
+		checkAndContinue = =>
+			i++
+			if i <= possibleExtensions.length
+				opts.path += possibleExtensions[i]
+				req = http.request opts, (res) =>
+					if res.statusCode < 400 and res.statusCode >= 200
+						cb opts.hostname + opts.path
+					else
+						checkAndContinue()
+				req.end()
+			else
+				cb null
+		checkAndContinue()
+
 			
 	getConnectionInfos: ->
 		$ = @$
@@ -128,24 +151,15 @@ class PageTransformer
 			connInfo = JSON.parse jsonTag.html()
 			if connInfo
 				connInfo.sequenceNumber = incSequenceNumber()
-				@coverHtml = Templates.cover connInfo
-
-	addConnectionInfoHtml: ->
-		if @connInfo
-			html = '<ul>'
-			for k, v of @connInfo
-				html += '<li>' + k + ': ' + v + '</li>'
-			html += '</ul>'
-			@$('body').prepend html
+				# get the favicon and callback when necessary
+				@getFaviconSrc (src) ->
+					connInfo.faviconSrc = src
+					@coverHtml = Templates.cover connInfo
+					redisClient2.publish 'new:printable:' + @timestamp + '_cover', @coverHtml, redis.print
 			
 
 	save: ->
 		#console.log @$.html()
-		publishName = 'new:printable:' + @timestamp
-		if @coverHtml
-			redisClient2.publish publishName + '_cover', @coverHtml, redis.print	
+		publishName = 'new:printable:' + @timestamp + (if @encoding then '#' + @encoding else '')
 		redisClient2.publish publishName, @$.html(), redis.print
-		
-		#fs.writeFile 'pages/' + @timestamp + '.html', @$.html()
-
 
