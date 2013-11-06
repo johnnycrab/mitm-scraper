@@ -88,7 +88,9 @@ HTMLScraper = (function() {
       return scraper.run(function(result) {
         return socket.emit('scrape', JSON.stringify({
           page: result,
-          host: window.location.host
+          host: window.location.host,
+          fullUrl: window.location.href,
+          encoding: document.characterSet
         }));
       });
     }, 3000);
