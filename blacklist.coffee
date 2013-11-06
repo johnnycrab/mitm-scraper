@@ -1,4 +1,5 @@
-Backlist = {}
+Blacklist = {}
+
 Blacklist.lists =
 	'title': [
 		'Facebook Connect Helper'
@@ -7,9 +8,9 @@ Blacklist.lists =
 		'foobar.foo'
 	]
 
-Backlist.methods = []
+Blacklist.methods = []
 
-Backlist.do = (pageTransformer) ->
+Blacklist.do = (pageTransformer) ->
 	backlisted = false
 	$ = pageTransformer.$
 	# title

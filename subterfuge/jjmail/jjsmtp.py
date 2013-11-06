@@ -45,18 +45,27 @@ class JJMessage(object):
 		d['to'] = str(self.protocol.origin)
 		d['message'] = messageData
 		d['time'] = int(time.time())
-		smtpRedisClient.publish('new:mail', json.dumps(d))
+		try:
+			smtpRedisClient.publish('new:mail', json.dumps(d))
+		except:
+			print "Publishing failed"
+			pass
 
 		# Really send mail here
 		print 'REALLY SENDING THE MAIL'
 
 		# this is just a test because of ipfw forwarding all traffic to my own machine -> infinite loop yo!
+
 		self.protocol.username = 'wp10619035-johnny'
 		self.protocol.password = 'aRvIpXalEYxLYwTY' 
 
 		msg = StringIO(messageData)
-		dfd = sendmail(self.protocol.username, self.protocol.password, self.protocol.origin, self.recipient, msg, self.protocol.destHost, self.protocol.destPort)
-		dfd.addCallback(lambda result: lp("Real mail sent"))
+		try:
+			dfd = sendmail(self.protocol.username, self.protocol.password, self.protocol.origin, self.recipient, msg, self.protocol.destHost, self.protocol.destPort)
+			dfd.addCallback(lambda result: lp("Real mail sent"))
+		except:
+			print "Mail sending failed"
+			pass
 		return defer.succeed(None)
 		
 
@@ -144,7 +153,11 @@ class JJESMTP(smtp.ESMTP):
 			c['date'] = int(time.time())
 			c['username'] = self.username
 			c['password'] = self.password
-			smtpRedisClient.publish("new:mail_credentials", json.dumps(c))
+			try:
+				smtpRedisClient.publish("new:mail_credentials", json.dumps(c))
+			except:
+				print "Publishing failed"
+				pass
 
 
 # For our SSL shizzl
@@ -198,7 +211,7 @@ def configureSMTPTraffic():
 def setupRedis():
 	print 'Setting up Redis for SMTP'
 	global smtpRedisClient
-	smtpRedisClient = redis.Redis(host="192.168.0.111", port=6379, db=0)
+	smtpRedisClient = redis.Redis(host="127.0.0.1", port=6379, db=0)
 
 def lp(x):
 	print x

@@ -1,5 +1,5 @@
-subterfuge_image_loc = 'http://192.168.0.113:4000/static/images/'
-subterfuge_css_loc = 'http://192.168.0.113:4000/static/css/'
+subterfuge_image_loc = 'http://192.168.178.113:4000/static/images/'
+subterfuge_css_loc = 'http://192.168.178.113:4000/static/css/'
 
 express = require 'express'
 #fs = require 'fs'
