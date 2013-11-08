@@ -68,11 +68,14 @@ io.sockets.on 'connection', (socket) ->
 # Redis credential subscription
 redisClient.subscribe 'new:credentials'
 redisClient.on 'message', (channel, message) ->
-	if channel is 'new:credentials'
-		credentialsObj = JSON.parse message
-		console.log 'Got credentials %o', credentialsObj
-		if credentialsObj
-			new WebpageCredentialsTransformer(credentialsObj).publish()
+	dataObj = JSON.parse message
+	if dataObj
+		if channel is 'new:credentials'
+			new WebpageCredentialsTransformer(dataObj).publish()
+		else if channel is 'new:mail_credentials'
+			new EmailCredentialsTransformer(dataObj).publish()
+		else if channel is 'new:mail'
+			new EmailCoverTransformer(dataObj).publish()
 			#credentialsObj.sequenceNumber = incSequenceNumber()
 			#redisClient2.publish 'new:printable:credentials_' + credentialsObj.date, Templates.credentials(credentialsObj)
 
