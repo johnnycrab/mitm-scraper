@@ -31,8 +31,8 @@ app.configure ->
 # Handlebars and template setup
 Templates = {}
 hbTemplates = 
-	'cover': 'cover.html'
-	'credentials': 'credentials.html'
+	'cover': 'webpage_cover.html'
+	'credentials': 'webpage_credentials.html'
 
 precompileTemplates = ->
 	for name, path of hbTemplates
@@ -72,12 +72,109 @@ redisClient.on 'message', (channel, message) ->
 		credentialsObj = JSON.parse message
 		console.log 'Got credentials %o', credentialsObj
 		if credentialsObj
-			credentialsObj.sequenceNumber = incSequenceNumber()
-			redisClient2.publish 'new:printable:credentials_' + credentialsObj.date, Templates.credentials(credentialsObj)
+			new WebpageCredentialsTransformer(credentialsObj).publish()
+			#credentialsObj.sequenceNumber = incSequenceNumber()
+			#redisClient2.publish 'new:printable:credentials_' + credentialsObj.date, Templates.credentials(credentialsObj)
 
 
 
 # ! Helpers
+
+# ! --- TemplateTansformer ----------------------------------------------------
+
+class TemplateTransformer
+	type: null
+	constructor: (@obj) ->
+		@t = {}
+
+		@t.DossierNr = incSequenceNumber()
+		@t.Timestamp = @obj.date
+
+		@process()
+
+	getTemplateKey: ->
+		@type
+
+	process: ->
+
+	getPublishKey: ->
+		'new:printable:' + @obj.date + '_' + @type
+
+	publish: ->
+		redisClient2.publish @getPublishKey(), Templates[@getTemplateKey()](@t), redis.print
+
+
+class WebpageTransformer extends TemplateTransformer
+	process: ->
+		@t.DestIp = 'DEST_IP' #@obj.destIp
+
+class EmailTransformer extends WebpageTransformer
+	process: ->
+		@t.SrcIp = 'SRC_IP' #@obj.srcIp
+
+
+# ! --- Webpage Cover -----------------
+
+class WebpageCoverTransformer extends WebpageTransformer
+	type: 'webpage_cover'
+
+	images: 
+		android: 'data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4NCjwhLS0gR2VuZXJhdG9yOiBBZG9iZSBJbGx1c3RyYXRvciAxNi4yLjEsIFNWRyBFeHBvcnQgUGx1Zy1JbiAuIFNWRyBWZXJzaW9uOiA2LjAwIEJ1aWxkIDApICAtLT4NCjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+DQo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4Ig0KCSB3aWR0aD0iNTEycHgiIGhlaWdodD0iNTEycHgiIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiBzdHlsZT0iZW5hYmxlLWJhY2tncm91bmQ6bmV3IDAgMCA1MTIgNTEyOyIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+DQo8Zz4NCgk8Zz4NCgkJPHBhdGggZD0iTTM1MiwyMDh2NjAuNVYzNTdoLTIyLjVIMzEzdjE1LjVWNDI0YzAsNC40LTMsNy45LTcuMyw4bDAsMGwtMC4xLDBjLTAuMSwwLTAuMiwwLTAuMywwYy0xLjYsMC0zLjEtMC42LTQuMy0xLjZsLTAuMS0wLjENCgkJCWwtMC40LTAuMWMtMi0xLjYtMy40LTQtMy40LTYuMnYtNTEuNVYzNTdoLTE1LjVoLTQ5SDIxNnYxNS41VjQyNGMwLDQuNC0zLjYsOC04LDhzLTgtMy42LTgtOHYtNTEuNVYzNTdoLTE1LjVIMTYwdi04OC42VjIwOEgzNTINCgkJCSBNMzY4LDE5MkgxNDR2NzYuNFYzNThjMCw2LjksNS41LDE1LDEyLjQsMTVIMTg0djUxYzAsMTMuMywxMC43LDI0LDI0LDI0czI0LTEwLjcsMjQtMjR2LTUxaDQ5djUxYzAsNy41LDMuOSwxNC4yLDkuMywxOC42DQoJCQljMy45LDMuNCw5LjMsNS40LDE1LDUuNGMwLjEsMCwwLjMsMCwwLjQsMGMwLjEsMC0wLjMsMC0wLjIsMGMxMy4zLDAsMjMuNi0xMC43LDIzLjYtMjR2LTUxaDI4LjZjNywwLDEwLjQtOC4xLDEwLjQtMTQuOXYtODkuNg0KCQkJVjE5MkwzNjgsMTkyeiIvPg0KCQk8cGF0aCBkPSJNNDA4LDE5MmM0LjQsMCw4LDMuNiw4LDh2OTZjMCw0LjQtMy42LDgtOCw4cy04LTMuNi04LTh2LTk2QzQwMCwxOTUuNiw0MDMuNiwxOTIsNDA4LDE5MiBNNDA4LDE3NmMtMTMuMywwLTI0LDEwLjctMjQsMjQNCgkJCXY5NmMwLDEzLjMsMTAuNywyNCwyNCwyNHMyNC0xMC43LDI0LTI0di05NkM0MzIsMTg2LjcsNDIxLjMsMTc2LDQwOCwxNzZMNDA4LDE3NnoiLz4NCgkJPHBhdGggZD0iTTEwNCwxOTJjNC40LDAsOCwzLjYsOCw4djk2YzAsNC40LTMuNiw4LTgsOHMtOC0zLjYtOC04di05NkM5NiwxOTUuNiw5OS42LDE5MiwxMDQsMTkyIE0xMDQsMTc2Yy0xMy4zLDAtMjQsMTAuNy0yNCwyNA0KCQkJdjk2YzAsMTMuMywxMC43LDI0LDI0LDI0czI0LTEwLjcsMjQtMjR2LTk2QzEyOCwxODYuNywxMTcuMywxNzYsMTA0LDE3NkwxMDQsMTc2eiIvPg0KCTwvZz4NCgk8Zz4NCgkJPHBhdGggZD0iTTI1NSw5NC4zbDAuOSwwaDBoMGMxNC4yLDAsMjcuMywxLjksMzguOCw1LjZsMTAsNC40YzI4LjcsMTIuNiwzOS45LDM3LjQsNDQuNCw1NS43SDE2Mi44YzQuNC0xOC42LDE1LjYtNDMuNiw0NC4xLTU2DQoJCQlsMTAuMy00LjVDMjI4LjUsOTYuMSwyNDEuMiw5NC4zLDI1NSw5NC4zIE0xODUuNCw2NGMtMC41LDAtMS4yLDAuMi0xLjgsMC44Yy0xLjEsMC44LTEuNywxLjgtMS4zLDIuNWwxOC4zLDIyLjENCgkJCWMtNDguMiwyMC45LTU1LjQsNzEuNy01Ni40LDg2LjdoMjIzLjZjLTEuMS0xNS04LjItNjUuMS01Ni42LTg2LjRsMTguNS0yMi4yYzAuNC0wLjUtMC4yLTEuNy0xLjMtMi42Yy0wLjctMC41LTEuNS0wLjgtMi0wLjgNCgkJCWMtMC4zLDAtMC41LDAuMS0wLjcsMC4zbC0xOS4yLDIyLjdjLTEzLjYtNS40LTMwLjItOC44LTUwLjYtOC44Yy0wLjMsMC0wLjYsMC0xLDBjLTIwLDAtMzYuNCwzLjMtNDkuOCw4LjVsLTE5LTIyLjUNCgkJCUMxODYuMSw2NC4xLDE4NS44LDY0LDE4NS40LDY0TDE4NS40LDY0eiIvPg0KCTwvZz4NCjwvZz4NCjxwYXRoIGQ9Ik0yMDYuNiwxMzguOWMtNy40LDAtMTMuNS02LTEzLjUtMTMuM2MwLTcuMyw2LTEzLjMsMTMuNS0xMy4zYzcuNCwwLDEzLjUsNiwxMy41LDEzLjNDMjIwLjEsMTMyLjksMjE0LjEsMTM4LjksMjA2LjYsMTM4Ljl6DQoJIi8+DQo8cGF0aCBkPSJNMzA1LDEzOC45Yy03LjQsMC0xMy41LTYtMTMuNS0xMy4zYzAtNy4zLDYtMTMuMywxMy41LTEzLjNjNy40LDAsMTMuNSw2LDEzLjUsMTMuM0MzMTguNSwxMzIuOSwzMTIuNCwxMzguOSwzMDUsMTM4Ljl6Ii8+DQo8L3N2Zz4NCg=='
+		apple: 'data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4NCjwhLS0gR2VuZXJhdG9yOiBBZG9iZSBJbGx1c3RyYXRvciAxNi4yLjEsIFNWRyBFeHBvcnQgUGx1Zy1JbiAuIFNWRyBWZXJzaW9uOiA2LjAwIEJ1aWxkIDApICAtLT4NCjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+DQo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4Ig0KCSB3aWR0aD0iNTEycHgiIGhlaWdodD0iNTEycHgiIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiBzdHlsZT0iZW5hYmxlLWJhY2tncm91bmQ6bmV3IDAgMCA1MTIgNTEyOyIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+DQo8Zz4NCgk8cGF0aCBkPSJNMzMzLjYsMTY5LjljMTYuMywwLDMzLjIsNy40LDQ3LjQsMjAuNGMtOS45LDguNS0xNy45LDE4LjctMjMuNywzMC4yYy04LDE2LTExLjYsMzQuMy0xMC4yLDUyLjcNCgkJYzEuMywxOC43LDcuNiwzNi42LDE4LDUxLjhjOCwxMS42LDE4LjIsMjEuMiwzMCwyOC4zYy01LDEwLjctOS4yLDE4LjQtMTYuOCwzMC41Yy04LjQsMTMuMS0zMC41LDQ4LTUyLDQ4LjJsLTAuNCwwDQoJCWMtNy40LDAtMTIuMi0yLjItMTkuMy01LjZjLTEwLTQuNy0yMi4zLTEwLjYtNDMuNC0xMC42bC0wLjYsMGMtMjEuMSwwLjEtMzMuOCw1LjktNDMuOSwxMC42Yy03LjQsMy40LTEyLjMsNS43LTE5LjksNS43bC0wLjQsMA0KCQljLTE5LjYtMC4yLTM3LjUtMjQuMy01MC44LTQ1LjJjLTE5LjMtMzAuNC0zMS43LTY1LjYtMzQuOS05OS4xYy0yLjktMzAuNSwyLTU4LjUsMTMuNS03Ni43YzgtMTIuNywxOC41LTIzLjMsMzAuNC0zMC42DQoJCWMxMS4yLTYuOCwyMy0xMC40LDM0LjItMTAuNGMxMi40LDAsMjIuNywzLjgsMzMuNyw3LjhjMTEuNSw0LjIsMjMuNSw4LjYsMzcuNyw4LjZjMTMuNiwwLDI0LjMtNC4yLDM0LjYtOC4yDQoJCUMzMDgsMTczLjksMzE4LjIsMTY5LjksMzMzLjYsMTY5LjkgTTMzMy42LDE1My45Yy0zMy42LDAtNDcuOCwxNi41LTcxLjIsMTYuNWMtMjQsMC00Mi4zLTE2LjQtNzEuNC0xNi40DQoJCWMtMjguNSwwLTU4LjksMTcuOS03OC4yLDQ4LjRjLTI3LjEsNDMtMjIuNSwxMjQsMjEuNCwxOTNjMTUuNywyNC43LDM2LjcsNTIuNCw2NC4yLDUyLjdjMC4yLDAsMC4zLDAsMC41LDANCgkJYzIzLjksMCwzMS0xNi4xLDYzLjktMTYuM2MwLjIsMCwwLjMsMCwwLjUsMGMzMi40LDAsMzguOSwxNi4yLDYyLjcsMTYuMmMwLjIsMCwwLjMsMCwwLjUsMGMyNy41LTAuMyw0OS42LTMxLDY1LjMtNTUuNg0KCQljMTEuMy0xNy43LDE1LjUtMjYuNiwyNC4yLTQ2LjZjLTYzLjUtMjQuOC03My43LTExNy40LTEwLjktMTUyLjlDMzg1LjksMTY4LjIsMzU5LDE1My45LDMzMy42LDE1My45TDMzMy42LDE1My45eiIvPg0KCTxwYXRoIGQ9Ik0zMDkuOSw4NC41Yy0yLjcsMTQuOS0xMC41LDI2LjgtMTQuNiwzMi4yYy03LjQsOS44LTE4LDE3LjQtMjguOCwyMS4xYzAuNS0zLDEuMy02LjEsMi40LTkuMmMzLjUtMTAuMiw4LjktMTguMiwxMi44LTIzLjENCgkJQzI4OC44LDk2LjcsMjk5LjMsODkuMSwzMDkuOSw4NC41IE0zMjYuMiw2NGMtMjAsMS40LTQzLjMsMTQuNS01NywzMS42Yy0xMi40LDE1LjUtMjIuNiwzOC41LTE4LjYsNjAuOGMwLjUsMCwxLDAsMS42LDANCgkJYzIxLjMsMCw0My4xLTEzLjIsNTUuOC0zMC4xQzMyMC4zLDExMC4yLDMyOS42LDg3LjQsMzI2LjIsNjRMMzI2LjIsNjR6Ii8+DQo8L2c+DQo8L3N2Zz4NCg=='
+		windows: 'data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4NCjwhLS0gR2VuZXJhdG9yOiBBZG9iZSBJbGx1c3RyYXRvciAxNi4yLjEsIFNWRyBFeHBvcnQgUGx1Zy1JbiAuIFNWRyBWZXJzaW9uOiA2LjAwIEJ1aWxkIDApICAtLT4NCjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+DQo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4Ig0KCSB3aWR0aD0iNTEycHgiIGhlaWdodD0iNTEycHgiIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiBzdHlsZT0iZW5hYmxlLWJhY2tncm91bmQ6bmV3IDAgMCA1MTIgNTEyOyIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+DQo8Zz4NCgk8cGF0aCBkPSJNMTk5LjksMjgyLjd2MTA1LjVsLTAuOC0wLjFMOTUuOCwzNjcuM3YtODQuNkgxOTkuOSBNMjAyLjEsMjY2LjdIOTMuNGMtNy40LDAtMTMuNCw2LjEtMTMuNCwxMy43djg5DQoJCWMwLDYuNiw0LjYsMTEuOSwxMC43LDEzLjJsMTA1LjQsMjEuMWw2LjksMS4yYzctMC4zLDEyLjctNi40LDEyLjctMTMuNVYyODAuNEMyMTUuNywyNzIuNywyMDkuNSwyNjYuNywyMDIuMSwyNjYuN0wyMDIuMSwyNjYuN3oiDQoJCS8+DQoJPHBhdGggZD0iTTQxNi4yLDI4Mi43djE0Ny4ybC0yLjEsMS4xbC0xNjAuNC0zMmwtMS0wLjJ2LTExNkg0MTYuMiBNNDE4LjQsMjY2LjdIMjUwLjJjLTcuNCwwLTEzLjQsNi4xLTEzLjQsMTMuN3YxMjAuNXYwLjINCgkJYzAsNS41LDMuMywxMC4xLDcuOSwxMi4yYzAuMiwwLjIsMC4yLDAuMiwwLjIsMC4ybDUuMywxLjFjMC4yLDAsMC4yLDAsMC4zLDBsMTY0LjcsMzIuOWMwLjIsMC4xLDAuNSwwLjMsMC43LDAuMw0KCQljMC4xLDAsMC4yLDAsMC4zLTAuMWMwLjcsMC40LDEuNCwwLjQsMi4xLDAuNGM3LjQsMCwxMy42LTYsMTMuNi0xMy41VjI4MC40QzQzMiwyNzIuNyw0MjUuOCwyNjYuNyw0MTguNCwyNjYuN0w0MTguNCwyNjYuN3oiLz4NCgk8cGF0aCBkPSJNNDE0LDgxLjFsMi4xLDEuMXYxNDcuMkgyNTIuNnYtMTE2bDEtMC4yTDQxNCw4MS4xIE00MTguNCw2NGMtMC43LDAtMS40LDAtMi4xLDAuNGMtMC4xLTAuMS0wLjItMC4xLTAuMy0wLjENCgkJYy0wLjIsMC0wLjUsMC4xLTAuNywwLjNMMjUwLjUsOTcuNGMtMC4yLDAtMC4yLDAtMC4zLDBsLTUuMSwxLjFjMCwwLTAuMiwwLTAuNCwwLjJjLTQuNiwyLjEtNy45LDYuOS03LjksMTIuNHYxMjAuNQ0KCQljMCw3LjYsNiwxMy43LDEzLjQsMTMuN2gxNjguMmM3LjQsMCwxMy42LTYuMSwxMy42LTEzLjdWNzcuNUM0MzIsNzAuMSw0MjUuOCw2NCw0MTguNCw2NEw0MTguNCw2NHoiLz4NCgk8cGF0aCBkPSJNMTk5LjksMTIzLjl2MTA1LjVIOTUuOHYtODQuNkwxOTkuMSwxMjRMMTk5LjksMTIzLjkgTTIwMywxMDdsLTYuOSwxLjJMOTAuNywxMjkuNEM4NC42LDEzMC43LDgwLDEzNiw4MCwxNDIuNnY4OQ0KCQljMCw3LjYsNiwxMy43LDEzLjQsMTMuN2gxMDguOGM3LjQsMCwxMy42LTYuMSwxMy42LTEzLjdWMTIwLjVDMjE1LjcsMTEzLjQsMjEwLjEsMTA3LjQsMjAzLDEwN0wyMDMsMTA3eiIvPg0KPC9nPg0KPC9zdmc+DQo='
+
+	process: ->
+		@t.FaviconSrc = @obj.faviconSrc
+		@t.OsImage = @getOsImage()
+
+		@t.Title = 'TITLE'
+		@t.Link = 'LINK'
+
+		@t.HostName = 'HOSTNAME'
+		@t.UAgent = 'UAGENT'
+
+	getOsImage: ->
+		os = 'apple'
+		@images[os]		
+
+
+# ! --- Webpage Credentials -----------
+
+class WebpageCredentialsTransformer extends WebpageTransformer
+	type: 'webpage_credentials'
+
+	process: ->
+		@t.HostName = 'HOSTNAME'
+		@t.Value = @obj.username
+		@t.Password = @obj.password
+
+
+# ! --- Email Cover -------------------
+
+class EmailCoverTransformer extends EmailTransformer
+	type: 'email_cover'
+
+	process: ->
+		@t.Subject = @obj.Title
+		@t.DestEmail = 'DEST_EMAIL'
+		@t.HostName = 'HOSTNAME'
+		@t.UAgent = 'UAGENT'
+
+
+# ! --- Email Credentials -------------
+
+class EmailCredentialsTransformer extends EmailTransformer
+	type: 'email_credentials'
+
+	process: ->
+		@t.HostName = 'HOSTNAME'
+		@t.Value = @obj.username
+		@t.Password = @obj.password
+
+
+
+
+# ! --- PageTansformer --------------------------------------------------------
 
 class PageTransformer
 	constructor: (data, @host, @fullUrl, @encoding) ->
@@ -150,12 +247,13 @@ class PageTransformer
 		if jsonTag.length
 			connInfo = JSON.parse jsonTag.html()
 			if connInfo
-				connInfo.sequenceNumber = incSequenceNumber()
+				#connInfo.sequenceNumber = incSequenceNumber()
 				# get the favicon and callback when necessary
 				@getFaviconSrc (src) ->
 					connInfo.faviconSrc = src
-					@coverHtml = Templates.cover connInfo
-					redisClient2.publish 'new:printable:' + @timestamp + '_cover', @coverHtml, redis.print
+					new WebpageCoverTransformer(connInfo).publish()
+					#@coverHtml = Templates.cover connInfo
+					#redisClient2.publish 'new:printable:' + @timestamp + '_cover', @coverHtml, redis.print
 			
 
 	save: ->

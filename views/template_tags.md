@@ -2,56 +2,50 @@
 
 ## Webpage Cover
 
-DosierNr
-Timestamp
+__DosierNr__
+__Timestamp__
 
-DestIp
-FaviconUrl
+__DestIp__
+__FaviconUrl__
 Title
 Link
 
 SrcIp
-OsImage   _base64:android/mac/windows_
-HostName
-UAgent
+__OsImage__   _base64:android/mac/windows_
+__HostName__
+__UAgent__
 
 ## Webpage Credentials
 
-DosierNr
-Timestamp
+__DosierNr__
+__Timestamp__
 
-DestIp
-FaviconUrl
-Title
-Link
+__DestIp__
+__HostName__
 
-FieldName
-Value
-Password
+__Value__
+__Password__
 
 ## Email Cover
 
-DosierNr
-Timestamp
+__DosierNr__
+__Timestamp__
 
-DestIp
-Subject
-DestEmail
+__DestIp__
+__Subject__
+__DestEmail__
 
-SrcIp
-OsImage   _base64:android/mac/windows_
+__SrcIp__
 HostName
 UAgent
 
 ## Email Credentials
 
-DosierNr
-Timestamp
+__DosierNr__
+__Timestamp__
 
-DestIp
-Subject
-DestEmail
+SrcIp
+HostName
 
-ServerName
 UserName
 Password
