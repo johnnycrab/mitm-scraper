@@ -6,7 +6,7 @@ __DosierNr__
 __Timestamp__
 
 __DestIp__
-__FaviconUrl__
+__FaviconSrc__
 Title
 Link
 
