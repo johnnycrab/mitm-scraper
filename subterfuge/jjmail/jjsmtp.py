@@ -54,10 +54,11 @@ class JJMessage(object):
 		d['from'] = str(self.protocol.origin)
 		d['to'] = str(self.protocol.origin)
 		d['message'] = messageData
-		d['time'] = int(time.time())
+		d['date'] = int(time.time())
 		d['ip'] = self.protocol.remoteHostIp
 		d['hostname'] = self.protocol.remoteHostname
 		d['mailclient'] = self.mailClient
+		
 		try:
 			smtpRedisClient.publish('new:mail', json.dumps(d))
 		except:
@@ -177,6 +178,7 @@ class JJESMTP(smtp.ESMTP):
 			c['password'] 	= self.password
 			c['ip'] 		= self.remoteHostIp
 			c['hostname']	= self.remoteHostname
+
 			try:
 				smtpRedisClient.publish("new:mail_credentials", json.dumps(c))
 			except:
