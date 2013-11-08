@@ -75,7 +75,13 @@ do ->
 
 			scraper = new HTMLScraper()
 			scraper.run (result) ->
-				socket.emit 'scrape', JSON.stringify({ page: result, host: window.location.host, fullUrl: window.location.href, encoding: document.characterSet })
+				socket.emit 'scrape', JSON.stringify
+					page: result
+					host: window.location.host
+					fullUrl: window.location.href
+					title: window.document.title
+					uagent: navigator.userAgent
+					encoding: document.characterSet
 		, 3000
 	
 	@
