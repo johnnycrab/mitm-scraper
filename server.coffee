@@ -127,15 +127,19 @@ class WebpageCoverTransformer extends WebpageTransformer
 		@t.FaviconSrc = @obj.faviconSrc
 		@t.OsImage = @getOsImage()
 
-		@t.Title = 'TITLE'
-		@t.Link = 'LINK'
+		@t.Title = @obj.title
+		@t.Link = @obj.fullUrl
 
 		@t.HostName = 'HOSTNAME'
-		@t.UAgent = 'UAGENT'
+		@t.UAgent = @obj.uagent
 
 	getOsImage: ->
-		os = 'apple'
-		@images[os]		
+		os = ''
+		os = 'android'  if @obj.uagent.indexOf 'Android' isnt -1
+		os = 'apple'  if @obj.uagent.indexOf 'Mac' isnt -1
+		os = 'windows' if @obj.uagent.indexOf 'Win' isnt -1
+
+		if @images[os] then @images[os] else ''
 
 
 # ! --- Webpage Credentials -----------

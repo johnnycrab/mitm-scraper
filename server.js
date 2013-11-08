@@ -185,16 +185,29 @@
     WebpageCoverTransformer.prototype.process = function() {
       this.t.FaviconSrc = this.obj.faviconSrc;
       this.t.OsImage = this.getOsImage();
-      this.t.Title = 'TITLE';
-      this.t.Link = 'LINK';
+      this.t.Title = this.obj.title;
+      this.t.Link = this.obj.fullUrl;
       this.t.HostName = 'HOSTNAME';
-      return this.t.UAgent = 'UAGENT';
+      return this.t.UAgent = this.obj.uagent;
     };
 
     WebpageCoverTransformer.prototype.getOsImage = function() {
       var os;
-      os = 'apple';
-      return this.images[os];
+      os = '';
+      if (this.obj.uagent.indexOf('Android' !== -1)) {
+        os = 'android';
+      }
+      if (this.obj.uagent.indexOf('Mac' !== -1)) {
+        os = 'apple';
+      }
+      if (this.obj.uagent.indexOf('Win' !== -1)) {
+        os = 'windows';
+      }
+      if (this.images[os]) {
+        return this.images[os];
+      } else {
+        return '';
+      }
     };
 
     return WebpageCoverTransformer;
