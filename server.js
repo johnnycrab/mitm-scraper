@@ -106,6 +106,8 @@ redisClient.subscribe('new:mail');
 
 redisClient.subscribe('new:mail_credentials');
 
+redisClient.subscribe('new:webpage');
+
 redisClient.on('message', function(channel, message) {
   var dataObj;
   dataObj = JSON.parse(message);
@@ -117,6 +119,8 @@ redisClient.on('message', function(channel, message) {
     } else if (channel === 'new:mail') {
       new EmailCoverTransformer(dataObj).publish();
       return new EmailTransformer(dataObj).publish();
+    } else if (channel === 'new:webpage') {
+      return console.log(dataObj);
     }
   }
 });
@@ -215,8 +219,6 @@ WebpageCoverTransformer = (function(_super) {
 
   WebpageCoverTransformer.prototype.process = function() {
     WebpageCoverTransformer.__super__.process.call(this);
-    console.log(this.obj);
-    console.log(this.t);
     this.t.FaviconSrc = this.obj.faviconSrc;
     this.t.OsImage = this.getOsImage();
     this.t.Title = this.obj.title;
@@ -287,8 +289,7 @@ EmailCoverTransformer = (function(_super) {
     this.t.DestEmail = this.obj.to;
     this.t.SrcEmail = this.obj.from;
     this.t.HostName = this.stripHostname(this.obj.hostname);
-    this.t.UAgent = this.obj.mailclient;
-    return console.log(this.obj);
+    return this.t.UAgent = this.obj.mailclient;
   };
 
   return EmailCoverTransformer;
@@ -309,8 +310,7 @@ EmailCredentialsTransformer = (function(_super) {
     EmailCredentialsTransformer.__super__.process.call(this);
     this.t.HostName = this.stripHostname(this.obj.hostname);
     this.t.UserName = this.obj.username;
-    this.t.Password = this.obj.password;
-    return console.log(this.obj);
+    return this.t.Password = this.obj.password;
   };
 
   return EmailCredentialsTransformer;
@@ -329,7 +329,6 @@ PageTransformer = (function() {
   }
 
   PageTransformer.prototype.run = function() {
-    console.log(Blacklist["do"](this));
     if (!Blacklist["do"](this)) {
       this.getConnectionInfos();
       this.removeScripts();

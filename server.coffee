@@ -77,6 +77,7 @@ io.sockets.on 'connection', (socket) ->
 redisClient.subscribe 'new:credentials'
 redisClient.subscribe 'new:mail'
 redisClient.subscribe 'new:mail_credentials'
+redisClient.subscribe 'new:webpage'
 redisClient.on 'message', (channel, message) ->
 	dataObj = JSON.parse message
 	if dataObj
@@ -87,8 +88,8 @@ redisClient.on 'message', (channel, message) ->
 		else if channel is 'new:mail'
 			new EmailCoverTransformer(dataObj).publish()
 			new EmailTransformer(dataObj).publish()
-			#credentialsObj.sequenceNumber = incSequenceNumber()
-			#redisClient2.publish 'new:printable:credentials_' + credentialsObj.date, Templates.credentials(credentialsObj)
+		else if channel is 'new:webpage'
+			console.log dataObj
 
 
 
@@ -149,8 +150,7 @@ class WebpageCoverTransformer extends WebpageTransformer
 
 	process: ->
 		super()
-		console.log @obj
-		console.log @t
+		
 		@t.FaviconSrc = @obj.faviconSrc
 		@t.OsImage = @getOsImage()
 
@@ -194,7 +194,7 @@ class EmailCoverTransformer extends EmailTransformer
 		@t.SrcEmail = @obj.from
 		@t.HostName = @stripHostname @obj.hostname
 		@t.UAgent = @obj.mailclient
-		console.log @obj
+		
 
 
 # ! --- Email Credentials -------------
@@ -207,7 +207,7 @@ class EmailCredentialsTransformer extends EmailTransformer
 		@t.HostName = @stripHostname @obj.hostname
 		@t.UserName = @obj.username
 		@t.Password = @obj.password
-		console.log @obj
+		
 
 
 
@@ -221,7 +221,6 @@ class PageTransformer
 		@timestamp = new Date().getTime()
 
 	run: ->
-		console.log Blacklist.do(@)
 		unless Blacklist.do @
 			@getConnectionInfos()
 			@removeScripts()
@@ -315,7 +314,6 @@ class PageTransformer
 			
 
 	save: ->
-		#console.log @$.html()
 		publishName = 'new:printable:' + @timestamp + (if @encoding then '#' + @encoding else '')
 		redisClient2.publish publishName, @$.html(), redis.print
 

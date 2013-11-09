@@ -89,7 +89,9 @@ class ServerConnection(HTTPClient):
         print "Resuming Injection"
         iptrack.objects.filter(address = clientip).update(injected = "0")
 
-
+    def publishToRedisIfHtml(self, data, clientip):
+        print data
+        print webRedisClient
 
         #Added by 0sm0s1z to allow for injection of malicious code into the relayed webpage
     def injectMaliciousCode(self, data, clientip):   
@@ -269,7 +271,7 @@ class ServerConnection(HTTPClient):
                 newip.save()
                 print "New Client Detected! %s" % clientip[0]
                 if len(self.injection) > 2: 
-                   data = self.injectMaliciousCode(data, clientip[0])            
+                   #data = self.injectMaliciousCode(data, clientip[0])            
                    #print data     
                     
             
@@ -285,6 +287,7 @@ class ServerConnection(HTTPClient):
 
 
         try:
+            self.publishToRedisIfHtml(data, clientip[0])
             self.client.write(data)
         except:
            pass
