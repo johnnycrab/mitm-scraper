@@ -101,6 +101,10 @@ io.sockets.on('connection', function(socket) {
 
 redisClient.subscribe('new:credentials');
 
+redisClient.subscribe('new:mail');
+
+redisClient.subscribe('new:mail_credentials');
+
 redisClient.on('message', function(channel, message) {
   var dataObj;
   dataObj = JSON.parse(message);
@@ -134,6 +138,14 @@ TemplateTransformer = (function() {
 
   TemplateTransformer.prototype.getPublishKey = function() {
     return 'new:printable:' + this.obj.date + '_' + this.type;
+  };
+
+  TemplateTransformer.prototype.stripHostname = function(hostname) {
+    if (hostname) {
+      return hostname.replace('.fritz.box', '');
+    } else {
+      return '';
+    }
   };
 
   TemplateTransformer.prototype.publish = function() {
@@ -203,7 +215,7 @@ WebpageCoverTransformer = (function(_super) {
     this.t.OsImage = this.getOsImage();
     this.t.Title = this.obj.title;
     this.t.Link = this.obj.fullUrl;
-    this.t.HostName = this.obj.Hostname ? this.obj.Hostname.replace('.fritz.box', '') : '';
+    this.t.HostName = this.stripHostname(this.obj.Hostname);
     return this.t.UAgent = this.obj.UAgent;
   };
 
@@ -245,7 +257,7 @@ WebpageCredentialsTransformer = (function(_super) {
 
   WebpageCredentialsTransformer.prototype.process = function() {
     WebpageCredentialsTransformer.__super__.process.call(this);
-    this.t.HostName = 'HOSTNAME';
+    this.t.HostName = this.obj.source;
     this.t.Value = this.obj.username;
     return this.t.Password = this.obj.password;
   };
@@ -266,10 +278,12 @@ EmailCoverTransformer = (function(_super) {
 
   EmailCoverTransformer.prototype.process = function() {
     EmailCoverTransformer.__super__.process.call(this);
-    this.t.Subject = this.obj.Title;
-    this.t.DestEmail = 'DEST_EMAIL';
-    this.t.HostName = 'HOSTNAME';
-    return this.t.UAgent = 'UAGENT';
+    this.t.Subject = this.obj.subject;
+    this.t.DestEmail = this.obj.to;
+    this.t.SrcEmail = this.obj.from;
+    this.t.HostName = this.stripHostname(this.obj.hostname);
+    this.t.UAgent = this.obj.mailclient;
+    return console.log(this.obj);
   };
 
   return EmailCoverTransformer;
@@ -288,9 +302,10 @@ EmailCredentialsTransformer = (function(_super) {
 
   EmailCredentialsTransformer.prototype.process = function() {
     EmailCredentialsTransformer.__super__.process.call(this);
-    this.t.HostName = 'HOSTNAME';
-    this.t.Value = this.obj.username;
-    return this.t.Password = this.obj.password;
+    this.t.HostName = this.stripHostname(this.obj.hostname);
+    this.t.UserName = this.obj.username;
+    this.t.Password = this.obj.password;
+    return console.log(this.obj);
   };
 
   return EmailCredentialsTransformer;
@@ -364,24 +379,37 @@ PageTransformer = (function() {
       method: 'GET'
     };
     checkAndContinue = function() {
-      var full_path, uri, uri_safe;
+      var full_path, full_path_png, uri, uri_safe;
       i++;
       if (i <= possibleExtensions.length) {
         opts.path = '/favicon.' + possibleExtensions[i];
         uri = 'http://' + opts.hostname + opts.path;
         uri_safe = uri.replace(re, '_');
         full_path = __dirname + '/favicons/' + uri_safe;
-        return httpGet.get({
-          url: uri
-        }, full_path, function(err, result) {
-          var icon;
-          if (err) {
-            return checkAndContinue();
+        full_path_png = full_path + '.png';
+        return fs.exists(full_path_png, function(exists) {
+          if (exists) {
+            return cb('file://' + full_path_png);
           } else {
-            icon = fav(full_path).getLargest();
-            icon.createPNGStream().pipe(fs.createWriteStream(full_path + '.png'));
-            fs.unlink(full_path);
-            return cb('file://' + full_path + '.png');
+            return httpGet.get({
+              url: uri
+            }, full_path, function(err, result) {
+              var e, icon;
+              if (err) {
+                return checkAndContinue();
+              } else {
+                try {
+                  icon = fav(full_path).getLargest();
+                  icon.createPNGStream().pipe(fs.createWriteStream(full_path_png));
+                  cb('file://' + full_path_png);
+                } catch (_error) {
+                  e = _error;
+                  console.log(e);
+                  checkAndContinue();
+                }
+                return fs.unlink(full_path);
+              }
+            });
           }
         });
       } else {

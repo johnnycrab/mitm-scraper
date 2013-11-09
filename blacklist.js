@@ -5,7 +5,7 @@ Blacklist = {};
 
 Blacklist.lists = {
   'title': ['Facebook Connect Helper'],
-  'host': ['googleads']
+  'host': ['googleads', 'adserv']
 };
 
 Blacklist.methods = [];
