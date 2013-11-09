@@ -39,6 +39,8 @@ hbTemplates =
 	'webpage_credentials': 'webpage_credentials.html'
 	'email_cover': 'email_cover.html'
 	'email_credentials': 'email_credentials.html'
+	'email_body': 'email_body.html'
+
 
 precompileTemplates = ->
 	for name, path of hbTemplates
@@ -127,6 +129,8 @@ class WebpageTransformer extends TemplateTransformer
 		@t.SrcIp = @obj.IP
 
 class EmailTransformer extends WebpageTransformer
+	type: 'email_body'
+
 	process: ->
 		super()
 		@t.Subject = @obj.subject

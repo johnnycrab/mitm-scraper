@@ -53,7 +53,8 @@ hbTemplates = {
   'webpage_cover': 'webpage_cover.html',
   'webpage_credentials': 'webpage_credentials.html',
   'email_cover': 'email_cover.html',
-  'email_credentials': 'email_credentials.html'
+  'email_credentials': 'email_credentials.html',
+  'email_body': 'email_body.html'
 };
 
 precompileTemplates = function() {
@@ -114,7 +115,8 @@ redisClient.on('message', function(channel, message) {
     } else if (channel === 'new:mail_credentials') {
       return new EmailCredentialsTransformer(dataObj).publish();
     } else if (channel === 'new:mail') {
-      return new EmailCoverTransformer(dataObj).publish();
+      new EmailCoverTransformer(dataObj).publish();
+      return new EmailTransformer(dataObj).publish();
     }
   }
 });
@@ -183,8 +185,12 @@ EmailTransformer = (function(_super) {
     return _ref1;
   }
 
+  EmailTransformer.prototype.type = 'email_body';
+
   EmailTransformer.prototype.process = function() {
-    return EmailTransformer.__super__.process.call(this);
+    EmailTransformer.__super__.process.call(this);
+    this.t.Subject = this.obj.subject;
+    return this.t.Message = this.obj.message;
   };
 
   return EmailTransformer;
@@ -278,7 +284,6 @@ EmailCoverTransformer = (function(_super) {
 
   EmailCoverTransformer.prototype.process = function() {
     EmailCoverTransformer.__super__.process.call(this);
-    this.t.Subject = this.obj.subject;
     this.t.DestEmail = this.obj.to;
     this.t.SrcEmail = this.obj.from;
     this.t.HostName = this.stripHostname(this.obj.hostname);
