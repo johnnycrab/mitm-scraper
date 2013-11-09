@@ -84,6 +84,7 @@ redisClient.on 'message', (channel, message) ->
 			new EmailCredentialsTransformer(dataObj).publish()
 		else if channel is 'new:mail'
 			new EmailCoverTransformer(dataObj).publish()
+			new EmailTransformer(dataObj).publish()
 			#credentialsObj.sequenceNumber = incSequenceNumber()
 			#redisClient2.publish 'new:printable:credentials_' + credentialsObj.date, Templates.credentials(credentialsObj)
 
@@ -128,7 +129,8 @@ class WebpageTransformer extends TemplateTransformer
 class EmailTransformer extends WebpageTransformer
 	process: ->
 		super()
-		
+		@t.Subject = @obj.subject
+		@t.Message = @obj.message
 
 
 # ! --- Webpage Cover -----------------
@@ -184,7 +186,6 @@ class EmailCoverTransformer extends EmailTransformer
 
 	process: ->
 		super()
-		@t.Subject = @obj.subject
 		@t.DestEmail = @obj.to
 		@t.SrcEmail = @obj.from
 		@t.HostName = @stripHostname @obj.hostname

