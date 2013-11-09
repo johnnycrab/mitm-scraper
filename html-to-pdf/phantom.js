@@ -18,7 +18,7 @@ if (fs.isFile(htmlFilepath)) {
 	page.onLoadFinished = function () {
 		page.render(pdfFilepath);
 		console.log('Saved pdf ' + filename);
-		fs.remove(htmlFilepath);
+		//fs.remove(htmlFilepath);
 		phantom.exit();
 	};
 }

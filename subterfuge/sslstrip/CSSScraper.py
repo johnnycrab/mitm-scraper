@@ -5,7 +5,7 @@
 from Scraper import Scraper
 
 class CSSScraper(Scraper):
-	_pathFromFileLocation = '/../scraper/css/'
+	_pathFromFileLocation = '/../scraper/scraper/css/'
 
 	def getPathFromFileLoc(self):
 		return CSSScraper._pathFromFileLocation

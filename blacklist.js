@@ -5,27 +5,27 @@ Blacklist = {};
 
 Blacklist.lists = {
   'title': ['Facebook Connect Helper'],
-  'host': ['foobar.foo']
+  'host': ['googleads']
 };
 
 Blacklist.methods = [];
 
 Blacklist["do"] = function(pageTransformer) {
-  var $, backlisted, blacklisted, h, t, title, _i, _j, _len, _len1, _ref, _ref1;
-  backlisted = false;
+  var $, blacklisted, h, t, title, _i, _j, _len, _len1, _ref, _ref1;
+  blacklisted = false;
   $ = pageTransformer.$;
   title = $('title').text();
-  _ref = Backlist.lists.title;
+  _ref = Blacklist.lists.title;
   for (_i = 0, _len = _ref.length; _i < _len; _i++) {
     t = _ref[_i];
     if (title.indexOf(t) >= 0) {
-      backlisted = true;
+      blacklisted = true;
     }
   }
-  _ref1 = Backlist.lists.host;
+  _ref1 = Blacklist.lists.host;
   for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
     h = _ref1[_j];
-    if (pageTransformer.host.indexOf(h >= 0)) {
+    if (pageTransformer.host.indexOf(h) >= 0) {
       blacklisted = true;
     }
   }

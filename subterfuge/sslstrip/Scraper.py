@@ -11,7 +11,7 @@ import os
 class Scraper:
 
 	_saveFolderPath = os.path.dirname(__file__)
-	_pathFromFileLocation = '/../scraper/'
+	_pathFromFileLocation = '/../scraper/scraper/'
 
 	def __init__(self, host, client, data):
 		self.host = host

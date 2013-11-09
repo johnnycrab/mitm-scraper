@@ -5,7 +5,7 @@
 from Scraper import Scraper
 
 class ImageScraper(Scraper):
-	_pathFromFileLocation = '/../scraper/images/'
+	_pathFromFileLocation = '/../scraper/scraper/images/'
 
 	def getPathFromFileLoc(self):
 		return ImageScraper._pathFromFileLocation

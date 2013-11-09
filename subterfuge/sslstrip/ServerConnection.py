@@ -133,14 +133,16 @@ class ServerConnection(HTTPClient):
         retVal = '<script type="application/json" id="mitm-scraper-conn-info">'
         d = {}
         d['IP'] = clientip
-        #d['Hostname'] = socket.gethostbyaddr(clientip)
+        try:
+            d['Hostname'] = socket.gethostbyaddr(clientip)[0]
+        except:
+            pass
         d['UAgent'] = self.headers['user-agent']
         d['Method'] = self.command
-        d['Host'] = self.headers['host']
+        d['DestIP'] = str(socket.gethostbyname(self.headers['host']))
         d['URI'] = self.uri
         if self.postData:
-            d['POST'] = self.postData
-        d['Date'] = time.time()
+            d['POST'] = self.postData 
 
         return retVal + json.dumps(d) + '</script>'
 
@@ -312,5 +314,5 @@ class ServerConnection(HTTPClient):
         try:
                 self.client.finish()
         except:
-        pass
-            self.transport.loseConnection()
+            pass
+        self.transport.loseConnection()

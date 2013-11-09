@@ -31,7 +31,7 @@ def main():
 
 	print "Connecting to redis"
 	global redisClient
-	redisClient = redis.Redis(host="192.168.0.111", port=6379, db=0)
+	redisClient = redis.Redis(host="127.0.0.1", port=6379, db=0)
 
 	#Read in username fields from definitions file
 	u = open('/usr/share/subterfuge/definitions/usernamefields.lst', 'r')
@@ -165,7 +165,11 @@ def reap(source, username, password):
 	c['password'] = password
 	c['source'] = source
 	
-	redisClient.publish("new:credentials", json.dumps(c))
+	try:
+		redisClient.publish("new:credentials", json.dumps(c))
+	except:
+		print "Publishing failed"
+		pass
 
 	logcred = credentials(source = source, username = username, password = password, date = date)
 	logcred.save()

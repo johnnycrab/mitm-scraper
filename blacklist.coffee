@@ -5,22 +5,22 @@ Blacklist.lists =
 		'Facebook Connect Helper'
 	]
 	'host': [
-		'foobar.foo'
+		'googleads'
 	]
 
 Blacklist.methods = []
 
 Blacklist.do = (pageTransformer) ->
-	backlisted = false
+	blacklisted = false
 	$ = pageTransformer.$
 	# title
 	title = $('title').text()
-	for t in Backlist.lists.title
+	for t in Blacklist.lists.title
 		if title.indexOf(t) >= 0
-			backlisted = true
+			blacklisted = true
 
-	for h in Backlist.lists.host
-		if pageTransformer.host.indexOf h >= 0
+	for h in Blacklist.lists.host
+		if pageTransformer.host.indexOf(h) >= 0
 			blacklisted = true
 
 	blacklisted
