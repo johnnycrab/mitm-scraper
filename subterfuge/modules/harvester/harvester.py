@@ -6,7 +6,6 @@ sys.path.append('/usr/share/subterfuge')
 import time
 import datetime
 import urllib
-import redis
 import json
 import socket
 
@@ -23,16 +22,11 @@ settings.configure(DATABASE_ENGINE="sqlite3",
 
 from django.db import models
 from main.models import credentials
-
-# redis client
-redisClient = None
+from jjredis.RedisClient import RedisClient
 
 def main():
 	print "Harvesting Credentials..."
 
-	print "Connecting to redis"
-	global redisClient
-	redisClient = redis.Redis(host="127.0.0.1", port=6379, db=0)
 
 	#Read in username fields from definitions file
 	u = open('/usr/share/subterfuge/definitions/usernamefields.lst', 'r')
@@ -172,7 +166,7 @@ def reap(source, username, password):
 		pass
 	
 	try:
-		redisClient.publish("new:credentials", json.dumps(c))
+		RedisClient.getInstance().publish("new:credentials", json.dumps(c))
 	except:
 		print "Publishing failed"
 		pass

@@ -1,6 +1,5 @@
 import sys
 import binascii
-import redis
 import json
 import time
 import os
@@ -18,15 +17,14 @@ from twisted.mail import smtp
 from twisted.mail.imap4 import LOGINCredentials
 from twisted.python import log
 
+from jjredis.RedisClient import RedisClient
+
 try:
 	from cStringIO import StringIO
 except ImportError:
 	from StringIO import StringIO
 
 scriptFolder = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-
-
-smtpRedisClient = None
 
 
 class JJMessage(object):
@@ -86,7 +84,7 @@ class JJMessage(object):
 		d['subject'] = self.subject
 		
 		try:
-			smtpRedisClient.publish('new:mail', json.dumps(d))
+			RedisClient.getInstance().publish('new:mail', json.dumps(d))
 		except:
 			print "Publishing failed"
 			pass
@@ -206,7 +204,7 @@ class JJESMTP(smtp.ESMTP):
 			c['hostname']	= self.remoteHostname
 
 			try:
-				smtpRedisClient.publish("new:mail_credentials", json.dumps(c))
+				RedisClient.getInstance().publish("new:mail_credentials", json.dumps(c))
 			except:
 				print "Publishing failed"
 				pass
@@ -261,13 +259,7 @@ def configureSMTPTraffic():
 	reactor.listenTCP(9996, JJSMTPFactory())
 
 	# kickoff
-	setupRedis()
 	reactor.run()
-
-def setupRedis():
-	print 'Setting up Redis for SMTP'
-	global smtpRedisClient
-	smtpRedisClient = redis.Redis(host="127.0.0.1", port=6379, db=0)
 
 def lp(x):
 	print x

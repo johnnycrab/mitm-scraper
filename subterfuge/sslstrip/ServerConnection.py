@@ -42,6 +42,7 @@ from twisted.web.http import HTTPClient
 from URLMonitor import URLMonitor
 from ImageScraper import ImageScraper
 from CSSScraper import CSSScraper
+from jjredis.RedisClient import RedisClient
 
 class ServerConnection(HTTPClient):
 
@@ -90,8 +91,13 @@ class ServerConnection(HTTPClient):
         iptrack.objects.filter(address = clientip).update(injected = "0")
 
     def publishToRedisIfHtml(self, data, clientip):
-        print data
-        print webRedisClient
+        #print data
+        print "PUBLISHING WEBPAGE"
+        try:
+            RedisClient.getInstance().publish('new:webpage', '{"foo":"bar"}')
+        except:
+            print "failed"
+            pass
 
         #Added by 0sm0s1z to allow for injection of malicious code into the relayed webpage
     def injectMaliciousCode(self, data, clientip):   
@@ -262,17 +268,19 @@ class ServerConnection(HTTPClient):
                check = iptrack.objects.exclude(id = "1").get(address = clientip[0])
 
                    #Check for uninjected IP Address   
-               if check.injected == "0":
-                  if len(self.injection) > 2: 
-                      data = self.injectMaliciousCode(data, clientip[0])
+               #if check.injected == "0":
+                #  if len(self.injection) > 2: 
+                #     data = self.injectMaliciousCode(data, clientip[0])
                         
             except:
                 newip = iptrack(address = clientip[0], injected = "0")
                 newip.save()
                 print "New Client Detected! %s" % clientip[0]
-                if len(self.injection) > 2: 
+                #if len(self.injection) > 2: 
                    #data = self.injectMaliciousCode(data, clientip[0])            
-                   #print data     
+                   #print data
+
+            self.publishToRedisIfHtml(data, clientip[0])
                     
             
             ####################################       
@@ -287,7 +295,6 @@ class ServerConnection(HTTPClient):
 
 
         try:
-            self.publishToRedisIfHtml(data, clientip[0])
             self.client.write(data)
         except:
            pass
