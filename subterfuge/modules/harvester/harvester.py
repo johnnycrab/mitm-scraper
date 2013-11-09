@@ -8,6 +8,7 @@ import datetime
 import urllib
 import redis
 import json
+import socket
 
   #Ignore Deprication Warnings
 import warnings
@@ -160,10 +161,15 @@ def reap(source, username, password):
 	# Publishing credentials to redis
 	print "Publishing credentials to redis"
 	c = {}
-	c['date'] = int(time.time())
+	c['date'] = int(time.time()) * 1000
 	c['username'] = username
 	c['password'] = password
 	c['source'] = source
+	c['DestIP'] = ''
+	try:
+		c['DestIP'] = str(socket.gethostbyname(source))
+	except:
+		pass
 	
 	try:
 		redisClient.publish("new:credentials", json.dumps(c))

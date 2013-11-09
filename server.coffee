@@ -73,6 +73,8 @@ io.sockets.on 'connection', (socket) ->
 
 # Redis credential subscription
 redisClient.subscribe 'new:credentials'
+redisClient.subscribe 'new:mail'
+redisClient.subscribe 'new:mail_credentials'
 redisClient.on 'message', (channel, message) ->
 	dataObj = JSON.parse message
 	if dataObj
@@ -108,6 +110,9 @@ class TemplateTransformer
 
 	getPublishKey: ->
 		'new:printable:' + @obj.date + '_' + @type
+
+	stripHostname: (hostname) ->
+		if hostname then hostname.replace('.fritz.box', '') else ''
 
 	publish: ->
 		console.log "Publishing printable data...s"
@@ -146,7 +151,7 @@ class WebpageCoverTransformer extends WebpageTransformer
 		@t.Title = @obj.title
 		@t.Link = @obj.fullUrl
 
-		@t.HostName = if @obj.Hostname then @obj.Hostname.replace('.fritz.box', '') else ''
+		@t.HostName = @stripHostname @obj.Hostname
 		@t.UAgent = @obj.UAgent
 
 	getOsImage: ->
@@ -167,7 +172,7 @@ class WebpageCredentialsTransformer extends WebpageTransformer
 
 	process: ->
 		super()
-		@t.HostName = 'HOSTNAME'
+		@t.HostName = @obj.source
 		@t.Value = @obj.username
 		@t.Password = @obj.password
 
@@ -179,10 +184,12 @@ class EmailCoverTransformer extends EmailTransformer
 
 	process: ->
 		super()
-		@t.Subject = @obj.Title
-		@t.DestEmail = 'DEST_EMAIL'
-		@t.HostName = 'HOSTNAME'
-		@t.UAgent = 'UAGENT'
+		@t.Subject = @obj.subject
+		@t.DestEmail = @obj.to
+		@t.SrcEmail = @obj.from
+		@t.HostName = @stripHostname @obj.hostname
+		@t.UAgent = @obj.mailclient
+		console.log @obj
 
 
 # ! --- Email Credentials -------------
@@ -192,9 +199,10 @@ class EmailCredentialsTransformer extends EmailTransformer
 
 	process: ->
 		super()
-		@t.HostName = 'HOSTNAME'
-		@t.Value = @obj.username
+		@t.HostName = @stripHostname @obj.hostname
+		@t.UserName = @obj.username
 		@t.Password = @obj.password
+		console.log @obj
 
 
 
@@ -260,14 +268,24 @@ class PageTransformer
 				uri = 'http://' + opts.hostname + opts.path
 				uri_safe = uri.replace(re, '_')
 				full_path = __dirname + '/favicons/' + uri_safe
-				httpGet.get {url:uri}, full_path, (err, result) ->
-					if (err)
-						checkAndContinue()
+				full_path_png = full_path + '.png'
+				fs.exists full_path_png, (exists) ->
+					if exists
+						cb 'file://' + full_path_png
 					else
-						icon = fav(full_path).getLargest()
-						icon.createPNGStream().pipe(fs.createWriteStream(full_path + '.png'))
-						fs.unlink(full_path)
-						cb('file://' + full_path + '.png')
+						httpGet.get {url:uri}, full_path, (err, result) ->
+							if (err)
+								checkAndContinue()
+							else
+								try
+									icon = fav(full_path).getLargest()
+									icon.createPNGStream().pipe(fs.createWriteStream(full_path_png))
+									cb('file://' + full_path_png)
+								catch e
+									console.log e
+									checkAndContinue()
+								fs.unlink(full_path)
+						
 
 			else
 				cb null

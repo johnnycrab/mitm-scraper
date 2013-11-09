@@ -6,6 +6,7 @@ Blacklist.lists =
 	]
 	'host': [
 		'googleads'
+		'adserv'
 	]
 
 Blacklist.methods = []

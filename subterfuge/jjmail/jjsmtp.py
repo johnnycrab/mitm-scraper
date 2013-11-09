@@ -54,7 +54,7 @@ class JJMessage(object):
 		d['from'] = str(self.protocol.origin)
 		d['to'] = str(self.protocol.origin)
 		d['message'] = messageData
-		d['date'] = int(time.time())
+		d['date'] = int(time.time() * 1000)
 		d['ip'] = self.protocol.remoteHostIp
 		d['hostname'] = self.protocol.remoteHostname
 		d['mailclient'] = self.mailClient
@@ -173,7 +173,7 @@ class JJESMTP(smtp.ESMTP):
 			# publish credentials to redis
 			print 'Publishing mail account credentials to redis'
 			c = {}
-			c['date'] = int(time.time())
+			c['date'] = int(time.time() * 1000)
 			c['username'] 	= self.username
 			c['password'] 	= self.password
 			c['ip'] 		= self.remoteHostIp
@@ -211,9 +211,6 @@ class JJSMTPFactory(smtp.SMTPFactory):
 		#
 		# @todo: Here we should get the real host and port from iptables in Subterfuge somehow
 		#
-		
-		destHost = "wp268.webpack.hosteurope.de"
-		destPort = 587
 
 		proto = smtp.SMTPFactory.buildProtocol(self, addr)
 		proto.destHost = destHost
