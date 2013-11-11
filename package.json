@@ -11,7 +11,8 @@
     "request": "*",
     "canvas": "*",
     "fav": "0.0.7",
-    "http-get": "~0.5.10"
+    "http-get": "~0.5.10",
+    "iconv": "~2.0.7"
   },
   "main": "server",
   "engines": {

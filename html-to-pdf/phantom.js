@@ -16,9 +16,11 @@ if (fs.isFile(htmlFilepath)) {
 	page.open(htmlFilepath);
 
 	page.onLoadFinished = function () {
-		page.render(pdfFilepath);
-		console.log('Saved pdf ' + filename);
-		//fs.remove(htmlFilepath);
-		phantom.exit();
+		setTimeout(function () {
+			page.render(pdfFilepath);
+			console.log('Saved pdf ' + filename);
+			//fs.remove(htmlFilepath);
+			phantom.exit();
+		}, 5000);
 	};
 }

@@ -249,7 +249,7 @@ class JJSMTPFactory(smtp.SMTPFactory):
 
 def configureSMTPTraffic():
 	print 'Configuring mail traffic'
-	log.startLogging(sys.stdout)
+	#log.startLogging(sys.stdout)
 	
 	# port 25
 	reactor.listenTCP(9998, JJSMTPFactory())
