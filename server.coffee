@@ -1,5 +1,7 @@
-subterfuge_image_loc = 'http://localhost:4000/static/scraper/images/'
-subterfuge_css_loc = 'http://localhost:4000/static/scraper/css/'
+file_base_path = 'file:///usr/share/subterfuge/scraper/scraper/'
+subterfuge_image_loc = file_base_path + 'images/'
+subterfuge_css_loc = file_base_path + 'css/'
+subterfuge_js_loc = file_base_path + 'js/'
 
 express = require 'express'
 #fs = require 'fs'
@@ -13,10 +15,9 @@ Canvas = require 'canvas'
 fav = require('fav')(Canvas)
 httpGet = require('http-get')
 
-
 app = express()
 server = require('http').createServer app
-io = require('socket.io').listen server
+#io = require('socket.io').listen server
 
 # ! Redis config
 
@@ -61,7 +62,7 @@ incSequenceNumber = ->
 	sequenceNumber
 
 # ! Socket shit
-
+###
 io.sockets.on 'connection', (socket) ->
 	
 	socket.on 'ping', ->
@@ -71,7 +72,7 @@ io.sockets.on 'connection', (socket) ->
 		data = JSON.parse data
 		pageTransformer = new PageTransformer data.page, data.host, data.fullUrl, data.title, data.encoding
 		pageTransformer.run()
-
+###
 
 # Redis credential subscription
 redisClient.subscribe 'new:credentials'
@@ -89,7 +90,10 @@ redisClient.on 'message', (channel, message) ->
 			new EmailCoverTransformer(dataObj).publish()
 			new EmailTransformer(dataObj).publish()
 		else if channel is 'new:webpage'
-			console.log dataObj
+			pageTransformer = new PageTransformer dataObj
+			setTimeout ->
+				pageTransformer.run()
+			, 7000
 
 
 
@@ -215,15 +219,27 @@ class EmailCredentialsTransformer extends EmailTransformer
 # ! --- PageTansformer --------------------------------------------------------
 
 class PageTransformer
-	constructor: (data, @host, @fullUrl, @title, @encoding) ->
-		@html = '<!DOCTYPE html><html>' + data + '</html>'
+	constructor: (dataObj) ->
+		@encoding = dataObj.encoding
+		@html = dataObj.page
 		@$ = cheerio.load @html
 		@timestamp = new Date().getTime()
+		@host = dataObj.DestHost
+		@fullUrl = @host + dataObj.URI
+		@clientIp = dataObj.IP
+		@clientHostname = dataObj.Hostname
+		@destIp = dataObj.DestIP
+		@postData = dataObj.POST
+		@uagent = dataObj.UAgent
+		@title = @getTitle()
+
+	getTitle: ->
+		if @$('title') then @$('title').text() else ''
 
 	run: ->
 		unless Blacklist.do @
 			@getConnectionInfos()
-			@removeScripts()
+			@changeJavascriptSources()
 			@changeImageSources()
 			@changeCSSSources()
 			@save()
@@ -245,10 +261,12 @@ class PageTransformer
 					newHost = attr.replace 'http://', ''
 				# replace all slashes with underscores
 				re = new RegExp '/', 'g'
-				newHost = new_path + newHost.replace(re, '_')
+				newHost = new_path + encodeURIComponent(newHost.replace(re, '_'))
 
 				$(@).attr attrName, newHost
 
+	changeJavascriptSources: ->
+		@substituteSlashes 'script', 'src', subterfuge_js_loc
 
 	changeImageSources: ->
 		@substituteSlashes 'img', 'src', subterfuge_image_loc
@@ -297,20 +315,19 @@ class PageTransformer
 
 			
 	getConnectionInfos: ->
-		$ = @$
-		jsonTag = $('#mitm-scraper-conn-info')
-		if jsonTag.length
-			connInfo = JSON.parse jsonTag.html()
-			connÍnfo = connInfo or {}
-			connInfo.fullUrl = @fullUrl
-			connInfo.title = @title
-			# get the favicon and callback when necessary
-			connInfo.date = @timestamp
-			@getFaviconSrc (src) ->
-				connInfo.faviconSrc = src
-				new WebpageCoverTransformer(connInfo).publish()
-					#@coverHtml = Templates.cover connInfo
-					#redisClient2.publish 'new:printable:' + @timestamp + '_cover', @coverHtml, redis.print
+		connInfo =
+			fullUrl : @fullUrl
+			title : @title
+			UAgent : @uagent
+			DestIP : @destIp
+			POST : @postData
+			Hostname : @clientHostname
+			IP : @clientIp
+			date : @timestamp
+		# get the favicon and callback when necessary
+		@getFaviconSrc (src) ->
+			connInfo.faviconSrc = src
+			new WebpageCoverTransformer(connInfo).publish()
 			
 
 	save: ->

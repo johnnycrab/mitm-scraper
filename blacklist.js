@@ -4,8 +4,8 @@ var Blacklist;
 Blacklist = {};
 
 Blacklist.lists = {
-  'title': ['Facebook Connect Helper'],
-  'host': ['googleads', 'adserv']
+  'title': ['Facebook Connect Helper', '301 Moved Permanently', '302 Found', '500 Internal Server Error', 'Document moved', 'Facebook Cross-Domain Messaging helper'],
+  'host': ['googleads', 'adserv', 'player.vimeo.com', 'widgets/tweet_button', 'rover.ebay.com', 'clients2.google', 'facebook.com/plugins/like', 'addthis.com', 'adform.net', 'amazon-adsystem.com', '.doubleclick.net', 'adframe.php', 'johnnycrab.com']
 };
 
 Blacklist.methods = [];
@@ -20,13 +20,15 @@ Blacklist["do"] = function(pageTransformer) {
     t = _ref[_i];
     if (title.indexOf(t) >= 0) {
       blacklisted = true;
+      break;
     }
   }
   _ref1 = Blacklist.lists.host;
   for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
     h = _ref1[_j];
-    if (pageTransformer.host.indexOf(h) >= 0) {
+    if (pageTransformer.fullUrl.indexOf(h) >= 0) {
       blacklisted = true;
+      break;
     }
   }
   return blacklisted;

@@ -19,6 +19,12 @@ for item in ps.listen():
 	if filename != "*":
 
 		data = item['data']
+		if encoding != 'utf8':
+			try:
+				data = data.decode('utf8')
+				data = data.encode(encoding)
+			except:
+				pass
 		# save to html file
 		savePath = htmlPath + filename + '.html'
 
