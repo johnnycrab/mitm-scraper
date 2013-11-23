@@ -19,7 +19,7 @@ if (fs.isFile(htmlFilepath)) {
 		setTimeout(function () {
 			page.render(pdfFilepath);
 			console.log('Saved pdf ' + filename);
-			//fs.remove(htmlFilepath);
+			fs.remove(htmlFilepath);
 			phantom.exit();
 		}, 5000);
 	};
