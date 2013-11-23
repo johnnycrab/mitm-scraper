@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/!svn/ver/84/trunk/templates/includes
+END
+header.inc
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/84/trunk/templates/includes/header.inc
+END
+hostcheck.inc
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/84/trunk/templates/includes/hostcheck.inc
+END
+notificationtable.inc
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/84/trunk/templates/includes/notificationtable.inc
+END
+footer.inc
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/40/trunk/templates/includes/footer.inc
+END
+netview.inc
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/84/trunk/templates/includes/netview.inc
+END
+nav.inc
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/84/trunk/templates/includes/nav.inc
+END
+credtable.inc
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/40/trunk/templates/includes/credtable.inc
+END

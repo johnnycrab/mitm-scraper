@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/84/trunk/templates/settings/vectors
+END
+arpcachepoisoning.set
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/!svn/ver/84/trunk/templates/settings/vectors/arpcachepoisoning.set
+END
+roguedhcp.set
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/84/trunk/templates/settings/vectors/roguedhcp.set
+END
+wpadhijack.set
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/!svn/ver/84/trunk/templates/settings/vectors/wpadhijack.set
+END
+wirelessapgenerator.set
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/!svn/ver/84/trunk/templates/settings/vectors/wirelessapgenerator.set
+END

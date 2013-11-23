@@ -1,0 +1,77 @@
+K 25
+svn:wc:ra_dav:version-url
+V 31
+/svn/!svn/ver/84/trunk/sslstrip
+END
+URLMonitor.py
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/23/trunk/sslstrip/URLMonitor.py
+END
+sslstrip
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/svn/!svn/ver/23/trunk/sslstrip/sslstrip
+END
+ServerConnectionFactory.py
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/23/trunk/sslstrip/ServerConnectionFactory.py
+END
+db
+K 25
+svn:wc:ra_dav:version-url
+V 34
+/svn/!svn/ver/23/trunk/sslstrip/db
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svn/!svn/ver/23/trunk/sslstrip/__init__.py
+END
+clientip
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/svn/!svn/ver/84/trunk/sslstrip/clientip
+END
+StrippingProxy.py
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/23/trunk/sslstrip/StrippingProxy.py
+END
+CookieCleaner.py
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/23/trunk/sslstrip/CookieCleaner.py
+END
+ServerConnection.py
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/84/trunk/sslstrip/ServerConnection.py
+END
+ClientRequest.py
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/28/trunk/sslstrip/ClientRequest.py
+END
+SSLServerConnection.py
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/23/trunk/sslstrip/SSLServerConnection.py
+END
+DnsCache.py
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svn/!svn/ver/23/trunk/sslstrip/DnsCache.py
+END

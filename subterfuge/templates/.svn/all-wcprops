@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 32
+/svn/!svn/ver/84/trunk/templates
+END
+home.ext
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/!svn/ver/61/trunk/templates/home.ext
+END
+notifications.ext
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/84/trunk/templates/notifications.ext
+END
+mod.ext
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/svn/!svn/ver/40/trunk/templates/mod.ext
+END
+profile.tm
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svn/!svn/ver/40/trunk/templates/profile.tm
+END
+settings.ext
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/84/trunk/templates/settings.ext
+END
+plugins.ext
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/!svn/ver/84/trunk/templates/plugins.ext
+END
+netview.ext
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/!svn/ver/40/trunk/templates/netview.ext
+END
+basic.tm
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/!svn/ver/40/trunk/templates/basic.tm
+END
+wpad.dat
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/!svn/ver/84/trunk/templates/wpad.dat
+END

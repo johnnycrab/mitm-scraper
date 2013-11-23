@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 30
+/svn/!svn/ver/84/trunk/modules
+END
+views.py
+K 25
+svn:wc:ra_dav:version-url
+V 39
+/svn/!svn/ver/84/trunk/modules/views.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/svn/!svn/ver/23/trunk/modules/__init__.py
+END
+exportcreds.py
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/84/trunk/modules/exportcreds.py
+END
+models.py
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/svn/!svn/ver/84/trunk/modules/models.py
+END
+modextras.py
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svn/!svn/ver/23/trunk/modules/modextras.py
+END

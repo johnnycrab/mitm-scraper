@@ -1,0 +1,83 @@
+K 25
+svn:wc:ra_dav:version-url
+V 37
+/svn/!svn/ver/84/trunk/templates/mods
+END
+dos_settings.mod
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/84/trunk/templates/mods/dos_settings.mod
+END
+dos.mod
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/40/trunk/templates/mods/dos.mod
+END
+builder.mod
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/40/trunk/templates/mods/builder.mod
+END
+builder_settings.mod
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/40/trunk/templates/mods/builder_settings.mod
+END
+tunnelblock.mod
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/40/trunk/templates/mods/tunnelblock.mod
+END
+tunnelblock_settings.mod
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/40/trunk/templates/mods/tunnelblock_settings.mod
+END
+netview_settings.mod
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/40/trunk/templates/mods/netview_settings.mod
+END
+netview.mod
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/40/trunk/templates/mods/netview.mod
+END
+builder_page.mod
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/40/trunk/templates/mods/builder_page.mod
+END
+harvester.mod
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/40/trunk/templates/mods/harvester.mod
+END
+harvester_settings.mod
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/!svn/ver/40/trunk/templates/mods/harvester_settings.mod
+END
+default_settings.mod
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/40/trunk/templates/mods/default_settings.mod
+END
+default.mod
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/40/trunk/templates/mods/default.mod
+END
